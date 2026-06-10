@@ -193,3 +193,165 @@ export async function getEventSeats(eventId, userId = null) {
     };
   });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  AI Smart Seat Recommender — Google Gemini (free tier) with heuristic fallback
+// ─────────────────────────────────────────────────────────────────────────────
+
+let geminiClient = null;
+async function getGemini() {
+  if (geminiClient) return geminiClient;
+  const { GoogleGenAI } = await import('@google/genai');
+  geminiClient = new GoogleGenAI({ apiKey: config.gemini.apiKey });
+  return geminiClient;
+}
+
+function normalizePrefs(preferences) {
+  if (!preferences) return new Set();
+  const arr = Array.isArray(preferences) ? preferences : String(preferences).split(',');
+  return new Set(arr.map((p) => p.trim().toLowerCase()).filter(Boolean));
+}
+
+const rowRank = (row) => (row || 'Z').charCodeAt(0); // 'A' (65) = front
+
+function buildReason(seats, prefs, total) {
+  const labels = seats.map((s) => `${s.row}${s.number}`).join(', ');
+  const tags = [];
+  if (prefs.has('together')) tags.push('together');
+  if (prefs.has('front')) tags.push('near the front');
+  if (prefs.has('back')) tags.push('toward the back');
+  if (prefs.has('aisle')) tags.push('on the aisle');
+  const tagStr = tags.length ? ` (${tags.join(', ')})` : '';
+  return `Recommended ${seats.length} seat(s) ${labels}${tagStr} for a total of $${total}.`;
+}
+
+/** Deterministic recommender used when Gemini is unavailable or fails. */
+function heuristicRecommend(available, groupSize, maxBudget, prefs) {
+  const seats = available.filter((s) => s.price != null);
+  if (!seats.length || groupSize < 1) {
+    return { recommendedSeatIds: [], reason: 'No available seats match the request.' };
+  }
+
+  const wantTogether = prefs.has('together');
+  const wantFront = prefs.has('front');
+  const wantBack = prefs.has('back');
+  const wantAisle = prefs.has('aisle');
+
+  // "together": cheapest run of consecutive seat numbers in one row, within budget.
+  if (wantTogether && groupSize > 1) {
+    const byRow = {};
+    for (const s of seats) (byRow[s.row] ||= []).push(s);
+    const candidates = [];
+    for (const row of Object.keys(byRow)) {
+      const list = byRow[row].sort((a, b) => a.number - b.number);
+      for (let i = 0; i + groupSize <= list.length; i += 1) {
+        const window = list.slice(i, i + groupSize);
+        const consecutive = window.every((s, j) => j === 0 || s.number === window[j - 1].number + 1);
+        if (!consecutive) continue;
+        const total = window.reduce((a, s) => a + s.price, 0);
+        if (maxBudget != null && total > maxBudget) continue;
+        candidates.push({ seats: window, total, row });
+      }
+    }
+    if (candidates.length) {
+      candidates.sort((a, b) => {
+        if (wantFront) { const r = rowRank(a.row) - rowRank(b.row); if (r) return r; }
+        if (wantBack) { const r = rowRank(b.row) - rowRank(a.row); if (r) return r; }
+        return a.total - b.total;
+      });
+      const best = candidates[0];
+      return { recommendedSeatIds: best.seats.map((s) => s.id), reason: buildReason(best.seats, prefs, best.total) };
+    }
+  }
+
+  // Otherwise rank by preference, then price, and greedily fill within budget.
+  let aisleSet = null;
+  if (wantAisle) {
+    aisleSet = new Set();
+    const byRow = {};
+    for (const s of seats) (byRow[s.row] ||= []).push(s);
+    for (const row of Object.keys(byRow)) {
+      const l = byRow[row].sort((a, b) => a.number - b.number);
+      aisleSet.add(l[0].id);
+      aisleSet.add(l[l.length - 1].id);
+    }
+  }
+  const pool = [...seats].sort((a, b) => {
+    if (wantFront) { const r = rowRank(a.row) - rowRank(b.row); if (r) return r; }
+    if (wantBack) { const r = rowRank(b.row) - rowRank(a.row); if (r) return r; }
+    if (aisleSet) { const aa = aisleSet.has(a.id) ? 0 : 1; const bb = aisleSet.has(b.id) ? 0 : 1; if (aa !== bb) return aa - bb; }
+    return a.price - b.price;
+  });
+
+  const chosen = [];
+  let total = 0;
+  for (const s of pool) {
+    if (chosen.length >= groupSize) break;
+    if (maxBudget != null && total + s.price > maxBudget) continue;
+    chosen.push(s);
+    total += s.price;
+  }
+  if (chosen.length < groupSize) {
+    return {
+      recommendedSeatIds: chosen.map((s) => s.id),
+      reason: `Only ${chosen.length} of ${groupSize} seat(s) fit the budget/preferences; showing the best available.`,
+    };
+  }
+  return { recommendedSeatIds: chosen.map((s) => s.id), reason: buildReason(chosen, prefs, total) };
+}
+
+function buildPrompt(available, groupSize, maxBudget, prefs) {
+  const seatLines = available.map((s) => `${s.id} | ${s.row}${s.number} | ${s.category} | $${s.price}`).join('\n');
+  return [
+    'You are a seat recommendation assistant for an event booking system.',
+    'Available seats (id | seat | category | price):',
+    seatLines,
+    '',
+    `Recommend exactly ${groupSize} seat(s)` +
+      (prefs.length ? ` that are ${prefs.join(', ')}` : '') +
+      (maxBudget != null ? ` with a combined price under $${maxBudget}` : '') + '.',
+    'Guidance: same row for "together", lower rows (A, B) for "front", higher rows for "back", row-end seats for "aisle".',
+    'Respond with ONLY JSON: {"recommendedSeatIds": ["<id>", ...], "reason": "<short explanation>"}.',
+    'Only use ids from the list above and never exceed the budget.',
+  ].join('\n');
+}
+
+/**
+ * Recommend `groupSize` available seats matching budget + preferences.
+ * Uses Gemini when GEMINI_API_KEY is set, else (or on any failure) a heuristic.
+ */
+export async function recommendSeats({ eventId, groupSize = 1, maxBudget = null, preferences = [] }) {
+  const prefs = normalizePrefs(preferences);
+  const all = await getEventSeats(eventId);
+  const available = all.filter((s) => s.status === 'available');
+  if (!available.length) {
+    return { recommendedSeatIds: [], reason: 'No seats are currently available for this event.', source: 'none', seats: [] };
+  }
+
+  if (config.gemini.apiKey) {
+    try {
+      const ai = await getGemini();
+      const prompt = buildPrompt(available, groupSize, maxBudget, [...prefs]);
+      const resp = await ai.models.generateContent({
+        model: config.gemini.model,
+        contents: prompt,
+        config: { responseMimeType: 'application/json', temperature: 0.2 },
+      });
+      const parsed = JSON.parse((resp.text || '').trim());
+      const ids = Array.isArray(parsed.recommendedSeatIds) ? parsed.recommendedSeatIds : [];
+      const validIds = ids.filter((id) => available.some((s) => s.id === id));
+      if (validIds.length) {
+        const seats = validIds.map((id) => available.find((s) => s.id === id));
+        const total = seats.reduce((a, s) => a + s.price, 0);
+        return { recommendedSeatIds: validIds, reason: parsed.reason || buildReason(seats, prefs, total), source: 'gemini', model: config.gemini.model, seats };
+      }
+      logger.warn('[recommend] Gemini returned no valid seat ids; using heuristic');
+    } catch (err) {
+      logger.warn(`[recommend] Gemini failed (${err.message}); using heuristic`);
+    }
+  }
+
+  const h = heuristicRecommend(available, groupSize, maxBudget, prefs);
+  const seats = h.recommendedSeatIds.map((id) => available.find((s) => s.id === id)).filter(Boolean);
+  return { ...h, source: 'heuristic', seats };
+}

@@ -1,7 +1,7 @@
 // Seats: live seat list for an event, hold, and release. (recommend -> AI section)
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { Errors } from '../utils/errors.js';
-import { holdSeat, releaseHold, getEventSeats, getSeatById } from '../services/seatService.js';
+import { holdSeat, releaseHold, getEventSeats, getSeatById, recommendSeats } from '../services/seatService.js';
 
 export const getSeats = asyncHandler(async (req, res) => {
   const eventId = req.params.id;
@@ -26,5 +26,11 @@ export const hold = asyncHandler(async (req, res) => {
 export const release = asyncHandler(async (req, res) => {
   const { holdToken } = req.body;
   const result = await releaseHold({ userId: req.user.id, holdToken });
+  res.json(result);
+});
+
+export const recommend = asyncHandler(async (req, res) => {
+  const { eventId, groupSize, maxBudget, preferences } = req.body;
+  const result = await recommendSeats({ eventId, groupSize, maxBudget, preferences });
   res.json(result);
 });
