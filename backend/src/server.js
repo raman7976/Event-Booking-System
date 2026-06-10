@@ -9,11 +9,17 @@ import { isRedisReady } from './config/redis.js';
 import { writePool } from './config/db.js';
 import apiRouter from './routes/index.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
+import { initSocket } from './config/socket.js';
 
 const app = express();
 app.set('trust proxy', true); // honor X-Forwarded-* from nginx
 app.use(cors({ origin: config.clientUrls, credentials: true }));
 app.use(express.json());
+// Surface which instance served the request (handy for verifying load balancing).
+app.use((_req, res, next) => {
+  res.setHeader('X-Served-By', config.instanceId);
+  next();
+});
 
 // Liveness/readiness probe (used by docker + nginx healthchecks)
 app.get('/health', async (_req, res) => {
@@ -40,12 +46,15 @@ app.use(notFound);
 app.use(errorHandler);
 
 const server = http.createServer(app);
+const io = initSocket(server);
+
 server.listen(config.port, () => {
   logger.info(`[server] ${config.instanceId} listening on :${config.port} (${config.env})`);
 });
 
 function shutdown(signal) {
   logger.info(`[server] ${signal} received — shutting down`);
+  io.close();
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(1), 8000).unref();
 }

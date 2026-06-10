@@ -203,7 +203,9 @@ services:
       - booking_net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/health || exit 1"]
+      # localhost resolves to ::1 in the container, but nginx listens on IPv4 only
+      # -> use 127.0.0.1 explicitly.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
