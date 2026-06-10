@@ -7,6 +7,8 @@ import { config } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { isRedisReady } from './config/redis.js';
 import { writePool } from './config/db.js';
+import apiRouter from './routes/index.js';
+import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 app.set('trust proxy', true); // honor X-Forwarded-* from nginx
@@ -31,9 +33,11 @@ app.get('/health', async (_req, res) => {
   });
 });
 
-// API routes are mounted here in a later section:
-//   app.use('/api', apiRouter);
-// (and the global errorHandler is added after them)
+app.use('/api', apiRouter);
+
+// 404 + central error handling (Section 11) — must be registered last.
+app.use(notFound);
+app.use(errorHandler);
 
 const server = http.createServer(app);
 server.listen(config.port, () => {
