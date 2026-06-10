@@ -4,6 +4,7 @@ import { publisher, redis, isRedisReady } from '../config/redis.js';
 import { logger } from '../utils/logger.js';
 
 export const SEAT_UPDATES_CHANNEL = 'seat-updates';
+export const WAITLIST_NOTIFY_CHANNEL = 'waitlist-notify';
 const snapshotKey = (eventId) => `event:${eventId}:seats`;
 
 /** Maintain the per-event seat snapshot hash: field=seatId value=available|held|booked */
@@ -42,5 +43,19 @@ export async function publishSeatUpdate({ eventId, seatId, status, userId = null
     await publisher.publish(SEAT_UPDATES_CHANNEL, payload);
   } catch (err) {
     logger.warn('[cache] publish failed:', err.message);
+  }
+}
+
+/** Tell a specific user (via the node instances) that a seat opened up for them. */
+export async function publishWaitlistNotify({ eventId, userId, seatId = null }) {
+  if (!isRedisReady()) {
+    logger.warn('[cache] publishWaitlistNotify skipped — redis down');
+    return;
+  }
+  const payload = JSON.stringify({ eventId, userId, seatId, timestamp: Date.now() });
+  try {
+    await publisher.publish(WAITLIST_NOTIFY_CHANNEL, payload);
+  } catch (err) {
+    logger.warn('[cache] publishWaitlistNotify failed:', err.message);
   }
 }
