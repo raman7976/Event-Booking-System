@@ -1,10 +1,134 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design tokens ─────────────────────────────────────────────── */
+:root {
+  --bg: #07070d;
+  --surface: rgba(255, 255, 255, 0.04);
+  --border: rgba(255, 255, 255, 0.08);
+  --brand-a: #8b5cf6; /* violet  */
+  --brand-b: #d946ef; /* fuchsia */
+  --brand-c: #22d3ee; /* cyan    */
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background: #0f172a;
-  color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg);
+  color: #e4e4ef;
+  background-image:
+    radial-gradient(900px 500px at 85% -10%, rgba(139, 92, 246, 0.14), transparent 60%),
+    radial-gradient(700px 420px at -10% 25%, rgba(217, 70, 239, 0.08), transparent 60%),
+    radial-gradient(600px 400px at 50% 110%, rgba(34, 211, 238, 0.06), transparent 60%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.45);
+}
+
+/* slim, dark scrollbar */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.22); }
+
+/* ─── Reusable surfaces & controls ──────────────────────────────── */
+@layer components {
+  .glass {
+    @apply rounded-2xl border;
+    background: var(--surface);
+    border-color: var(--border);
+    backdrop-filter: blur(14px);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(100deg, #c4b5fd 0%, var(--brand-a) 35%, var(--brand-b) 70%, var(--brand-c) 110%);
+  }
+
+  .btn-primary {
+    @apply relative inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-transform duration-200;
+    background-image: linear-gradient(110deg, var(--brand-a), var(--brand-b));
+    box-shadow: 0 8px 28px -8px rgba(139, 92, 246, 0.55);
+  }
+  .btn-primary:hover { transform: translateY(-1px) scale(1.015); box-shadow: 0 12px 36px -8px rgba(217, 70, 239, 0.55); }
+  .btn-primary:active { transform: translateY(0) scale(0.99); }
+  .btn-primary:disabled { @apply cursor-not-allowed opacity-50; transform: none; }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:border-white/25 hover:bg-white/10;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-white/[0.07] focus:ring-2 focus:ring-violet-500/25;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 text-[11px] font-semibold tracking-wide backdrop-blur;
+  }
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────────── */
+@keyframes float-slow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(24px, -28px, 0) scale(1.06); }
+}
+@keyframes float-slower {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-30px, 22px, 0) scale(0.95); }
+}
+@keyframes shimmer {
+  0% { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+@keyframes seat-flash {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.85); opacity: 1; }
+  100% { box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); opacity: 0; }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
+}
+.animate-float-slow { animation: float-slow 14s ease-in-out infinite; }
+.animate-float-slower { animation: float-slower 18s ease-in-out infinite; }
+.animate-pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+
+.seat-flash-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: seat-flash 1.2s ease-out forwards;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* perforated ticket edge */
+.ticket-notch {
+  -webkit-mask-image: radial-gradient(circle at left center, transparent 11px, black 11.5px),
+    radial-gradient(circle at right center, transparent 11px, black 11.5px);
+  -webkit-mask-composite: source-in;
+  mask-image: radial-gradient(circle at left center, transparent 11px, black 11.5px),
+    radial-gradient(circle at right center, transparent 11px, black 11.5px);
+  mask-composite: intersect;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

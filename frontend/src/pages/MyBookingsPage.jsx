@@ -1,13 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { myBookings } from '../services/api.js';
+import { eventMedia, coverErrorHandler } from '../lib/eventMedia.js';
 import CountdownTimer from '../components/CountdownTimer.jsx';
 
-const STATUS_STYLE = {
-  confirmed: 'bg-green-900/50 text-green-300',
-  held: 'bg-amber-900/50 text-amber-300',
-  expired: 'bg-slate-700 text-slate-400',
-  cancelled: 'bg-slate-700 text-slate-400',
+const STATUS_CHIP = {
+  confirmed: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300',
+  held: 'border-amber-400/30 bg-amber-500/10 text-amber-300',
+  expired: 'border-white/10 bg-white/5 text-slate-500',
+  cancelled: 'border-white/10 bg-white/5 text-slate-500',
 };
 
 export default function MyBookingsPage() {
@@ -16,54 +18,82 @@ export default function MyBookingsPage() {
     queryFn: myBookings,
   });
 
-  if (isLoading) return <p className="text-slate-400">Loading your bookings…</p>;
-  if (error) return <p className="text-red-400">Failed to load bookings.</p>;
-
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-4 text-2xl font-bold">My bookings</h1>
+      <h1 className="mb-6 font-display text-3xl font-extrabold">
+        My <span className="text-gradient">bookings</span>
+      </h1>
 
-      {bookings.length === 0 && (
-        <div className="rounded-xl border border-slate-700 bg-slate-800 p-8 text-center">
-          <p className="text-slate-300">You haven&apos;t booked anything yet.</p>
-          <Link to="/" className="mt-3 inline-block rounded bg-blue-600 px-4 py-2 text-sm font-semibold hover:bg-blue-500">
-            Browse events
-          </Link>
+      {isLoading && (
+        <div className="space-y-3">{[0, 1].map((i) => <div key={i} className="skeleton h-28 rounded-2xl" />)}</div>
+      )}
+      {error && <p className="text-rose-400">Failed to load bookings.</p>}
+
+      {!isLoading && bookings.length === 0 && (
+        <div className="glass p-12 text-center">
+          <div className="text-4xl">🎫</div>
+          <p className="mt-3 font-display font-semibold text-slate-200">No tickets yet</p>
+          <p className="mt-1 text-sm text-slate-400">Grab a seat — it takes under a minute.</p>
+          <Link to="/" className="btn-primary mt-5">Browse events</Link>
         </div>
       )}
 
-      <div className="space-y-3">
-        {bookings.map((b) => (
-          <div key={b.reservationId} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-800 p-4">
-            <div>
-              <div className="font-semibold">{b.event.name}</div>
-              <div className="text-sm text-slate-400">
-                {b.event.venue} · {new Date(b.event.date).toLocaleString()}
-              </div>
-              <div className="mt-1 text-sm">
-                Seat <b>{b.seat.row}{b.seat.number}</b> · {b.seat.category} · ${b.seat.price}
-              </div>
-            </div>
-            <div className="text-right">
-              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold uppercase ${STATUS_STYLE[b.status] || 'bg-slate-700'}`}>
-                {b.status}
-              </span>
-              {b.status === 'held' && b.expiresAt && (
-                <div className="mt-1.5 text-xs text-slate-400">
-                  expires in <CountdownTimer expiresAt={b.expiresAt} onExpire={() => refetch()} />
+      <div className="space-y-4">
+        {bookings.map((b, i) => {
+          const media = eventMedia(b.event);
+          const muted = b.status === 'expired' || b.status === 'cancelled';
+          return (
+            <motion.div
+              key={b.reservationId}
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.07 }}
+              className={`group flex overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-card transition hover:border-violet-400/30 ${muted ? 'opacity-55' : ''}`}
+            >
+              {/* media stub */}
+              <Link to={`/events/${b.event.id}`} className="relative hidden w-36 shrink-0 overflow-hidden sm:block">
+                <div className={`absolute inset-0 bg-gradient-to-br ${media.gradient}`} />
+                <img
+                  src={media.image} onError={coverErrorHandler(media.fallback)} alt="" loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <span className="absolute bottom-2 left-2 font-display text-lg font-extrabold drop-shadow">
+                  {b.seat.row}{b.seat.number}
+                </span>
+              </Link>
+
+              <div className="flex flex-1 flex-wrap items-center justify-between gap-3 border-l border-dashed border-white/10 p-4 sm:p-5">
+                <div>
+                  <div className="font-display font-bold">{b.event.name}</div>
+                  <div className="mt-0.5 text-sm text-slate-400">
+                    📍 {b.event.venue} · {new Date(b.event.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                  </div>
+                  <div className="mt-1.5 text-sm text-slate-300">
+                    Seat <b>{b.seat.row}{b.seat.number}</b>
+                    <span className="mx-1.5 text-slate-600">·</span>{b.seat.category}
+                    <span className="mx-1.5 text-slate-600">·</span>${b.seat.price}
+                  </div>
                 </div>
-              )}
-              {b.payment && (
-                <div className="mt-1.5 text-xs text-slate-500">
-                  ${b.payment.amount} · {b.payment.transactionId?.slice(0, 14)}…
+
+                <div className="text-right">
+                  <span className={`inline-block rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${STATUS_CHIP[b.status] || STATUS_CHIP.expired}`}>
+                    {b.status}
+                  </span>
+                  {b.status === 'held' && b.expiresAt && (
+                    <div className="mt-1.5 text-xs text-slate-400">
+                      expires in <CountdownTimer expiresAt={b.expiresAt} onExpire={() => refetch()} />
+                    </div>
+                  )}
+                  {b.payment && (
+                    <div className="mt-1.5 font-mono text-[10px] text-slate-500">
+                      {b.payment.transactionId?.slice(0, 18)}…
+                    </div>
+                  )}
                 </div>
-              )}
-              <div className="mt-1.5">
-                <Link to={`/events/${b.event.id}`} className="text-xs text-blue-400 hover:underline">View event →</Link>
               </div>
-            </div>
-          </div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );

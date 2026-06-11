@@ -1,24 +1,53 @@
-// Shows waitlist status / join-leave controls when an event is full.
+// Sold-out banner with live waitlist position + join/leave controls.
+import { motion } from 'framer-motion';
+
 export default function WaitlistBadge({ info, onJoin, onLeave, busy }) {
   if (!info) return null;
   return (
-    <div className="flex items-center justify-between rounded-lg border border-amber-700/40 bg-amber-900/30 p-3">
-      <div className="text-sm text-amber-100">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-950/60 to-orange-950/40 p-4"
+    >
+      <div className="absolute -left-8 -top-10 h-28 w-28 rounded-full bg-amber-500/15 blur-2xl" aria-hidden="true" />
+      <div className="relative flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-lg">⏳</span>
+          <div className="text-sm">
+            {info.onWaitlist ? (
+              <>
+                <div className="font-display font-semibold text-amber-100">
+                  You&apos;re #{info.position ?? '—'} in line
+                </div>
+                <div className="text-amber-200/70">
+                  {info.size} waiting · we&apos;ll ping you live the second a seat frees up
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="font-display font-semibold text-amber-100">Sold out — for now</div>
+                <div className="text-amber-200/70">
+                  {info.size} in the waitlist · holds expire after 8 min, seats do come back
+                </div>
+              </>
+            )}
+          </div>
+        </div>
         {info.onWaitlist ? (
-          <>You&apos;re on the waitlist{info.position ? ` (position ${info.position} of ${info.size})` : ''}. We&apos;ll alert you the moment a seat frees up.</>
+          <button type="button" onClick={onLeave} disabled={busy} className="btn-ghost shrink-0 !py-2 text-amber-100">
+            Leave waitlist
+          </button>
         ) : (
-          <>This event is sold out. Join the waitlist ({info.size} waiting) to be notified.</>
+          <button
+            type="button"
+            onClick={onJoin}
+            disabled={busy}
+            className="shrink-0 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-semibold text-amber-950 shadow-[0_8px_24px_-8px_rgba(245,158,11,0.7)] transition hover:-translate-y-0.5 disabled:opacity-50"
+          >
+            {busy ? 'Joining…' : 'Join waitlist'}
+          </button>
         )}
       </div>
-      {info.onWaitlist ? (
-        <button type="button" onClick={onLeave} disabled={busy} className="ml-3 shrink-0 rounded bg-slate-700 px-3 py-1 text-sm hover:bg-slate-600 disabled:opacity-50">
-          Leave
-        </button>
-      ) : (
-        <button type="button" onClick={onJoin} disabled={busy} className="ml-3 shrink-0 rounded bg-amber-600 px-3 py-1 text-sm hover:bg-amber-500 disabled:opacity-50">
-          Join waitlist
-        </button>
-      )}
-    </div>
+    </motion.div>
   );
 }

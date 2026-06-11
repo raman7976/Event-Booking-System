@@ -1,20 +1,23 @@
 const ITEMS = [
-  ['#22c55e', 'Available'],
-  ['#eab308', 'Held by others'],
-  ['#3b82f6', 'Your hold'],
-  ['#ef4444', 'Booked'],
-  ['#6b7280', 'Unavailable'],
+  ['bg-gradient-to-b from-emerald-400 to-emerald-600', 'Available'],
+  ['bg-gradient-to-b from-amber-400 to-amber-600', 'Held by others'],
+  ['bg-gradient-to-b from-blue-400 to-violet-600', 'Your hold'],
+  ['bg-gradient-to-b from-rose-500 to-rose-800', 'Booked'],
 ];
 
 export default function SeatLegend() {
   return (
-    <div className="flex flex-wrap gap-4 text-sm text-slate-300">
-      {ITEMS.map(([color, label]) => (
-        <div key={label} className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-4 rounded" style={{ background: color }} />
+    <div className="flex flex-wrap items-center gap-2">
+      {ITEMS.map(([cls, label]) => (
+        <span key={label} className="chip text-slate-300">
+          <span className={`h-3 w-3 rounded ${cls}`} />
           {label}
-        </div>
+        </span>
       ))}
+      <span className="chip text-cyan-300">
+        <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse-dot" />
+        live updates
+      </span>
     </div>
   );
 }

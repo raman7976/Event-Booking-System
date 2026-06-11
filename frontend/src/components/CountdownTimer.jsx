@@ -1,4 +1,5 @@
-// MM:SS countdown. Turns red under 60s; fires onExpire once at zero.
+// MM:SS countdown. Amber under 2.5 min, red + heartbeat under 60s; fires
+// onExpire exactly once at zero.
 import { useEffect, useRef, useState } from 'react';
 
 export default function CountdownTimer({ expiresAt, onExpire, className = '' }) {
@@ -24,8 +25,11 @@ export default function CountdownTimer({ expiresAt, onExpire, className = '' }) 
 
   const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
   const ss = String(remaining % 60).padStart(2, '0');
+  const tone =
+    remaining < 60 ? 'text-rose-300 animate-pulse' : remaining < 150 ? 'text-amber-300' : 'text-blue-100';
+
   return (
-    <span className={`font-mono font-semibold ${remaining < 60 ? 'text-red-300' : 'text-blue-100'} ${className}`}>
+    <span className={`font-mono font-semibold tabular-nums ${tone} ${className}`}>
       {mm}:{ss}
     </span>
   );

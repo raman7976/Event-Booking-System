@@ -15,12 +15,18 @@ export function useSocket(eventId, { onWaitlistAvailable } = {}) {
     if (socket.connected) join();
 
     // Patch the cached seat list in place — instant UI update, no refetch.
+    // changedAt drives a one-shot flash so live updates are visible.
     const onSeatUpdate = (u) => {
       qc.setQueryData(['seats', eventId], (prev) =>
         prev
           ? prev.map((s) =>
               s.id === u.seatId
-                ? { ...s, status: u.status, heldByMe: u.status === 'held' ? s.heldByMe : false }
+                ? {
+                    ...s,
+                    status: u.status,
+                    heldByMe: u.status === 'held' ? s.heldByMe : false,
+                    changedAt: u.timestamp || Date.now(),
+                  }
                 : s,
             )
           : prev,

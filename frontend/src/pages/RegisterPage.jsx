@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth.js';
 import { apiError, apiFieldErrors } from '../services/api.js';
+import AuthLayout from '../components/AuthLayout.jsx';
+import PasswordInput from '../components/PasswordInput.jsx';
 
-const passwordIssues = (pw) => {
-  const issues = [];
-  if (pw.length < 8) issues.push('at least 8 characters');
-  if (!/[A-Za-z]/.test(pw)) issues.push('a letter');
-  if (!/[0-9]/.test(pw)) issues.push('a number');
-  return issues;
-};
+const RULES = [
+  ['8+ characters', (pw) => pw.length >= 8],
+  ['a letter', (pw) => /[A-Za-z]/.test(pw)],
+  ['a number', (pw) => /[0-9]/.test(pw)],
+];
 
 export default function RegisterPage() {
   const { register, status } = useAuth();
@@ -25,14 +26,15 @@ export default function RegisterPage() {
 
   if (status === 'authed') return <Navigate to="/" replace />;
 
-  const pwIssues = password ? passwordIssues(password) : [];
+  const ruleState = RULES.map(([label, test]) => [label, test(password)]);
+  const pwOk = ruleState.every(([, ok]) => ok);
   const mismatch = confirm && confirm !== password;
 
   const submit = async (e) => {
     e.preventDefault();
     setError(null);
     setFieldErrors(null);
-    if (pwIssues.length || mismatch) return;
+    if (!pwOk || mismatch) return;
     setBusy(true);
     try {
       await register(name.trim(), email, password);
@@ -46,75 +48,72 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="mx-auto mt-10 max-w-md">
-      <div className="rounded-2xl border border-slate-700/60 bg-slate-800/80 p-8 shadow-xl">
-        <h1 className="text-2xl font-bold">Create your account</h1>
-        <p className="mt-1 text-sm text-slate-400">Browse free — sign up to hold &amp; book seats.</p>
-
-        <form onSubmit={submit} className="mt-6 space-y-4">
-          <div>
-            <label htmlFor="name" className="mb-1 block text-sm text-slate-300">Name</label>
-            <input
-              id="name" required maxLength={100} value={name}
-              onChange={(e) => setName(e.target.value)} autoComplete="name"
-              className="w-full rounded-lg bg-slate-900 px-3 py-2.5 outline-none ring-1 ring-slate-700 focus:ring-2 focus:ring-blue-500"
-              placeholder="Ada Lovelace"
-            />
-          </div>
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm text-slate-300">Email</label>
-            <input
-              id="email" type="email" required value={email}
-              onChange={(e) => setEmail(e.target.value)} autoComplete="email"
-              className="w-full rounded-lg bg-slate-900 px-3 py-2.5 outline-none ring-1 ring-slate-700 focus:ring-2 focus:ring-blue-500"
-              placeholder="you@example.com"
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="mb-1 block text-sm text-slate-300">Password</label>
-            <input
-              id="password" type="password" required value={password}
-              onChange={(e) => setPassword(e.target.value)} autoComplete="new-password"
-              className="w-full rounded-lg bg-slate-900 px-3 py-2.5 outline-none ring-1 ring-slate-700 focus:ring-2 focus:ring-blue-500"
-              placeholder="min 8 chars, letter + number"
-            />
-            {pwIssues.length > 0 && (
-              <p className="mt-1 text-xs text-amber-300">Needs {pwIssues.join(', ')}.</p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="confirm" className="mb-1 block text-sm text-slate-300">Confirm password</label>
-            <input
-              id="confirm" type="password" required value={confirm}
-              onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password"
-              className="w-full rounded-lg bg-slate-900 px-3 py-2.5 outline-none ring-1 ring-slate-700 focus:ring-2 focus:ring-blue-500"
-            />
-            {mismatch && <p className="mt-1 text-xs text-amber-300">Passwords don&apos;t match.</p>}
-          </div>
-
-          {error && (
-            <div role="alert" className="rounded-lg bg-red-900/40 px-3 py-2 text-sm text-red-200">
-              {error}
-              {fieldErrors && (
-                <ul className="mt-1 list-inside list-disc text-xs">
-                  {fieldErrors.map((f) => <li key={f.field}>{f.field}: {f.message}</li>)}
-                </ul>
-              )}
+    <AuthLayout title="Create your account" subtitle="Browse free — sign up to hold & book seats.">
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-slate-300">Name</label>
+          <input
+            id="name" required maxLength={100} value={name}
+            onChange={(e) => setName(e.target.value)} autoComplete="name"
+            className="input-field" placeholder="Ada Lovelace"
+          />
+        </div>
+        <div>
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-300">Email</label>
+          <input
+            id="email" type="email" required value={email}
+            onChange={(e) => setEmail(e.target.value)} autoComplete="email"
+            className="input-field" placeholder="you@example.com"
+          />
+        </div>
+        <div>
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-300">Password</label>
+          <PasswordInput id="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" placeholder="Create a strong password" />
+          {password && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {ruleState.map(([label, ok]) => (
+                <span
+                  key={label}
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition-colors ${
+                    ok ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/5 text-slate-500'
+                  }`}
+                >
+                  {ok ? '✓' : '○'} {label}
+                </span>
+              ))}
             </div>
           )}
+        </div>
+        <div>
+          <label htmlFor="confirm" className="mb-1.5 block text-sm font-medium text-slate-300">Confirm password</label>
+          <PasswordInput id="confirm" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" placeholder="Repeat it" />
+          {mismatch && <p className="mt-1.5 text-xs text-amber-300">Passwords don&apos;t match.</p>}
+        </div>
 
-          <button
-            type="submit" disabled={busy || pwIssues.length > 0 || mismatch}
-            className="w-full rounded-lg bg-blue-600 py-2.5 font-semibold transition hover:bg-blue-500 disabled:opacity-50"
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} role="alert"
+            className="rounded-xl border border-rose-500/30 bg-rose-950/50 px-3 py-2 text-sm text-rose-200"
           >
-            {busy ? 'Creating account…' : 'Create account'}
-          </button>
-        </form>
+            {error}
+            {fieldErrors && (
+              <ul className="mt-1 list-inside list-disc text-xs">
+                {fieldErrors.map((f) => <li key={f.field}>{f.field}: {f.message}</li>)}
+              </ul>
+            )}
+          </motion.div>
+        )}
 
-        <p className="mt-5 text-center text-sm text-slate-400">
-          Already registered? <Link to="/login" className="text-blue-400 hover:underline">Sign in</Link>
-        </p>
-      </div>
-    </div>
+        <button type="submit" disabled={busy || !pwOk || Boolean(mismatch)} className="btn-primary w-full !py-3">
+          {busy ? (
+            <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> Creating account…</>
+          ) : 'Create account →'}
+        </button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-slate-400">
+        Already registered? <Link to="/login" className="font-medium text-violet-300 hover:underline">Sign in</Link>
+      </p>
+    </AuthLayout>
   );
 }
