@@ -1,5 +1,6 @@
 // Sold-out banner with live waitlist position + join/leave controls.
 import { motion } from 'framer-motion';
+import Icon from './ui/Icon.jsx';
 
 export default function WaitlistBadge({ info, onJoin, onLeave, busy }) {
   if (!info) return null;
@@ -12,7 +13,7 @@ export default function WaitlistBadge({ info, onJoin, onLeave, busy }) {
       <div className="absolute -left-8 -top-10 h-28 w-28 rounded-full bg-amber-200/50 blur-2xl" aria-hidden="true" />
       <div className="relative flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-lg">⏳</span>
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-lg"><Icon name="clock" size={20} className="text-amber-600" /></span>
           <div className="text-sm">
             {info.onWaitlist ? (
               <>

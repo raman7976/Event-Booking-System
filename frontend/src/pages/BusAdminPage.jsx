@@ -10,6 +10,7 @@ import {
   busAdminManifest, busAdminGenerate, busSchedule, apiError,
 } from '../services/api.js';
 import { useToast } from '../components/ui/Toast.jsx';
+import Icon from '../components/ui/Icon.jsx';
 
 const WD = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const hhmm = (t) => t?.slice(0, 5);
@@ -51,14 +52,14 @@ function ScheduleTable({ rows, onPatch, onDelete, busyId }) {
                   className="btn-ghost !rounded-lg !px-2 !py-1 text-[11px]"
                   title={s.active ? 'Deactivate' : 'Activate'}
                 >
-                  {s.active ? '⏸' : '▶️'}
+                  {s.active ? <Icon name="pause" size={13} /> : <Icon name="play" size={13} />}
                 </button>
                 <button
                   type="button" disabled={busyId === s.id}
                   onClick={() => onDelete(s.id)}
                   className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
                 >
-                  🗑
+                  <Icon name="trash" size={13} />
                 </button>
               </div>
             </td>
@@ -134,7 +135,7 @@ export default function BusAdminPage() {
         </h1>
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => regen.mutate()} disabled={regen.isPending} className="btn-ghost !py-1.5 text-xs">
-            {regen.isPending ? 'Generating…' : '♻️ Regenerate today'}
+            {regen.isPending ? 'Generating…' : <><Icon name="refresh" size={14} /> Regenerate today</>}
           </button>
           <Link to="/admin" className="btn-ghost !py-1.5 text-xs">← Admin panel</Link>
         </div>

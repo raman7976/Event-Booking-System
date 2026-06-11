@@ -6,6 +6,7 @@ import { listEvents } from '../services/api.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { getSocket } from '../services/socket.js';
 import { eventMedia, coverErrorHandler } from '../lib/eventMedia.js';
+import Icon from '../components/ui/Icon.jsx';
 
 function useSocketLive() {
   const [live, setLive] = useState(() => getSocket().connected);
@@ -165,7 +166,7 @@ function LiveMockSeatMap() {
               className={`relative flex h-10 w-10 items-center justify-center rounded-xl border text-[10px] font-bold transition-all ${bgClass} ${borderClass}`}
               title={s.status === 'held' ? `Held (${formatTimer(s.timer)})` : s.status}
             >
-              {s.status === 'held' ? '⏱️' : s.status === 'booked' ? '✕' : s.id}
+              {s.status === 'held' ? <Icon name="clock" size={14} /> : s.status === 'booked' ? '✕' : s.id}
               {s.status === 'held' && (
                 <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded bg-slate-900 px-1 py-0.2 text-[7px] text-white font-mono shadow leading-none scale-90 whitespace-nowrap z-10">
                   {formatTimer(s.timer)}
@@ -358,7 +359,7 @@ function EventCard({ ev, isAdmin, index }) {
       <div className="flex-1 flex flex-col justify-between p-5 space-y-4">
         <div className="space-y-3">
           <p className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
-            <span>📍</span>
+            <Icon name="pin" size={13} className="text-slate-400" />
             <span className="truncate">{ev.venue}</span>
             <span>·</span>
             <span>{date.toLocaleDateString([], { dateStyle: 'short' })}</span>
@@ -376,7 +377,7 @@ function EventCard({ ev, isAdmin, index }) {
           </Link>
           {isAdmin && (
             <Link to={`/events/${ev.id}/dashboard`} className="text-xs font-semibold text-slate-400 hover:text-slate-600 flex items-center gap-1" title="Analytics">
-              <span>📊</span>
+              <Icon name="chart" size={13} />
               <span>Analytics</span>
             </Link>
           )}
@@ -387,9 +388,9 @@ function EventCard({ ev, isAdmin, index }) {
 }
 
 const STEPS = [
-  ['🪑', 'Choose Your Seats', 'Browse our live seat map. Free seats are green; seats currently selected by others pulse in amber.'],
-  ['⏱️', '8-Minute Hold Lock', 'Once you click a seat, an atomic Redis lock reserves it for 8 minutes so you can checkout without stress.'],
-  ['🎫', 'Instant Bookings', 'The moment payment clears, the seat flips to red instantly for everyone. No refreshes, no double bookings.'],
+  ['pointer', 'Choose Your Seats', 'Browse our live seat map. Free seats are green; seats currently selected by others pulse in amber.'],
+  ['timer', '8-Minute Hold Lock', 'Once you click a seat, an atomic Redis lock reserves it for 8 minutes so you can checkout without stress.'],
+  ['ticket', 'Instant Bookings', 'The moment payment clears, the seat flips to red instantly for everyone. No refreshes, no double bookings.'],
 ];
 
 export default function EventsListPage() {
@@ -413,7 +414,7 @@ export default function EventsListPage() {
             transition={{ delay: i * 0.1, duration: 0.5 }}
             className="glass-card flex flex-col p-6 hover:shadow-md hover:-translate-y-1.5 transition-all duration-300"
           >
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-2xl shadow-sm border border-slate-200/50 self-start">{icon}</span>
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-2xl shadow-sm border border-slate-200/50 self-start"><Icon name={icon} size={22} className="text-slate-700" /></span>
             <h3 className="mt-4 font-display text-lg font-bold text-slate-900">{title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">{body}</p>
           </motion.div>

@@ -1,10 +1,11 @@
 // Split-screen auth shell: immersive brand panel (left, desktop only) + form.
 import { motion } from 'framer-motion';
+import Icon from './ui/Icon.jsx';
 
 const PERKS = [
-  ['⚡', 'Live seat maps', 'Watch holds and bookings land in real time over WebSockets.'],
-  ['🔒', 'Fair by design', 'Atomic Redis locks — two people can never book one seat.'],
-  ['✨', 'AI seat finder', 'Tell it your group, budget and vibe; it picks the seats.'],
+  ['bolt', 'Live seat maps', 'Watch holds and bookings land in real time over WebSockets.'],
+  ['lock', 'Fair by design', 'Atomic Redis locks — two people can never book one seat.'],
+  ['sparkles', 'AI seat finder', 'Tell it your group, budget and vibe; it picks the seats.'],
 ];
 
 export default function AuthLayout({ title, subtitle, children }) {
@@ -17,7 +18,7 @@ export default function AuthLayout({ title, subtitle, children }) {
 
         <div className="relative">
           <span className="font-display text-xl font-bold">
-            🎟️ Seat<span className="text-gradient">Live</span>
+            <Icon name="ticket" size={18} className="-mt-1 mr-1.5 text-violet-200" />Seat<span className="text-gradient">Live</span>
           </span>
           <h2 className="mt-8 font-display text-3xl font-extrabold leading-tight">
             The seat you tap is <span className="text-gradient">yours in milliseconds.</span>
@@ -33,7 +34,7 @@ export default function AuthLayout({ title, subtitle, children }) {
               transition={{ delay: 0.15 + i * 0.12 }}
               className="flex gap-3"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10">{icon}</span>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10"><Icon name={icon} size={17} className="text-violet-200" /></span>
               <div>
                 <div className="font-display text-sm font-semibold">{head}</div>
                 <div className="text-xs leading-relaxed text-slate-400">{body}</div>

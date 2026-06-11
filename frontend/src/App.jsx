@@ -14,6 +14,7 @@ import MyBookingsPage from './pages/MyBookingsPage.jsx';
 import BusSchedulePage from './pages/BusSchedulePage.jsx';
 import BusTripPage from './pages/BusTripPage.jsx';
 import BusAdminPage from './pages/BusAdminPage.jsx';
+import Icon from './components/ui/Icon.jsx';
 
 function PageSpinner() {
   return (
@@ -39,7 +40,7 @@ function RequireAdmin({ children }) {
   if (!isAdmin) {
     return (
       <div className="glass mx-auto mt-16 max-w-md p-10 text-center">
-        <div className="text-4xl">🚫</div>
+        <Icon name="ban" size={40} className="mx-auto text-rose-400" />
         <h1 className="mt-3 font-display text-xl font-bold text-slate-900">Admins only</h1>
         <p className="mt-1 text-sm text-slate-500">Your account doesn&apos;t have access to this page.</p>
         <Link to="/" className="btn-ghost mt-5">Back to events</Link>
@@ -102,7 +103,7 @@ function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
         <Link to="/" className="group flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-950 text-sm shadow-sm transition-transform group-hover:rotate-6">
-            🎟️
+            <Icon name="ticket" size={16} className="text-white" />
           </span>
           <span className="font-display text-lg font-bold tracking-tight text-slate-900">
             Seat<span className="text-gradient">Live</span>
@@ -163,7 +164,7 @@ function Footer() {
     <footer className="mt-20 border-t border-slate-200 py-8">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 text-xs text-slate-500">
         <span className="font-display font-semibold text-slate-600">
-          🎟️ SeatLive — real-time seat booking
+          <Icon name="ticket" size={14} className="-mt-0.5 mr-1.5 text-slate-400" />SeatLive — real-time seat booking
         </span>
         <span>
           React · Socket.io · Redis Lua holds · Postgres replication · BullMQ · nginx ×2 nodes

@@ -153,7 +153,7 @@ export default function BusSchedulePage() {
   const { data, isLoading } = useQuery({ queryKey: ['bus-schedule', undefined], queryFn: () => busSchedule() });
 
   const onPromoted = useCallback(
-    () => toast.push("You're off the waitlist — seat assigned! 🎉", 'live', 8000),
+    () => toast.push("You're off the waitlist — seat assigned!", 'live', 8000),
     [toast],
   );
   useBusScheduleLive(undefined, { onPromoted });
@@ -172,7 +172,7 @@ export default function BusSchedulePage() {
     setBusyId(trip.id);
     try {
       await busBook(trip.id);
-      toast.push(`Seat assigned on Bus ${trip.busNo} · ${hhmm(trip.departureAt)} 🚌`, 'success');
+      toast.push(`Seat assigned on Bus ${trip.busNo} · ${hhmm(trip.departureAt)}`, 'success');
       refresh();
     } catch (err) {
       toast.push(apiError(err), 'error', 6000);

@@ -7,6 +7,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import { useToast } from './ui/Toast.jsx';
 import { apiError } from '../services/api.js';
+import Icon from './ui/Icon.jsx';
 
 export default function RollNumberGate() {
   const { status, isCampus, hasRoll, updateRollNumber } = useAuth();
@@ -21,7 +22,7 @@ export default function RollNumberGate() {
     return (
       <div className="glass-card flex flex-wrap items-center justify-between gap-3 p-4">
         <p className="text-sm text-slate-600">
-          🚌 The campus bus service is free for LNMIIT students —{' '}
+          <Icon name="bus" size={15} className="-mt-0.5 mr-1.5 text-slate-500" />The campus bus service is free for LNMIIT students —{' '}
           <b className="text-slate-900">sign in with your @lnmiit.ac.in account</b> to book a seat.
         </p>
         <Link to="/login" state={{ from: location }} className="btn-primary !py-2 text-xs">Sign in</Link>
@@ -32,7 +33,7 @@ export default function RollNumberGate() {
   if (!isCampus) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-        ⚠️ Bus booking needs an <b>@lnmiit.ac.in</b> account. You can browse the live schedule,
+        <Icon name="alert" size={15} className="-mt-0.5 mr-1.5" />Bus booking needs an <b>@lnmiit.ac.in</b> account. You can browse the live schedule,
         but create/sign in with your institute email to book.
       </div>
     );
@@ -54,7 +55,7 @@ export default function RollNumberGate() {
     return (
       <form onSubmit={submit} className="glass-card flex flex-wrap items-center justify-between gap-3 p-4">
         <p className="text-sm text-slate-600">
-          🎓 One last step — add your <b className="text-slate-900">roll number</b> (it identifies you
+          <Icon name="id" size={15} className="-mt-0.5 mr-1.5 text-slate-500" />One last step — add your <b className="text-slate-900">roll number</b> (it identifies you
           on the manifest and the public waitlist).
         </p>
         <div className="flex gap-2">

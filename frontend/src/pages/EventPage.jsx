@@ -15,13 +15,9 @@ import SeatMap from '../components/SeatMap.jsx';
 import SeatLegend from '../components/SeatLegend.jsx';
 import BookingModal from '../components/BookingModal.jsx';
 import WaitlistBadge from '../components/WaitlistBadge.jsx';
+import Icon from '../components/ui/Icon.jsx';
 
-const PREFS = [
-  ['together', '👥'],
-  ['aisle', '🚶'],
-  ['front', '🎤'],
-  ['back', '🪑'],
-];
+const PREFS = ['together', 'aisle', 'front', 'back'];
 
 export default function EventPage() {
   const { id } = useParams();
@@ -33,7 +29,7 @@ export default function EventPage() {
   const requireLogin = () => navigate('/login', { state: { from: location } });
 
   const onWaitlistAvailable = useCallback(
-    () => toast.push('A seat just opened up for you — grab it now! 🎉', 'live', 8000),
+    () => toast.push('A seat just opened up for you — grab it now!', 'live', 8000),
     [toast],
   );
 
@@ -184,7 +180,7 @@ export default function EventPage() {
             </h1>
             {event && (
               <p className="mt-1 text-sm text-slate-200">
-                📍 {event.venue} · 🗓 {new Date(event.event_date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                <Icon name="pin" size={12} className="-mt-0.5 mr-1" />{event.venue} · <Icon name="calendar" size={12} className="-mt-0.5 mx-1" />{new Date(event.event_date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
               </p>
             )}
           </div>
@@ -199,7 +195,7 @@ export default function EventPage() {
                 to={`/events/${id}/dashboard`}
                 className="rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-xs font-medium text-white backdrop-blur transition hover:bg-white/20"
               >
-                📊 Dashboard
+                <Icon name="chart" size={13} className="-mt-0.5 mr-1" />Dashboard
               </Link>
             )}
           </div>
@@ -226,7 +222,7 @@ export default function EventPage() {
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex items-center gap-2.5">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-lg">
-              ✨
+              <Icon name="sparkles" size={20} className="text-violet-600" />
             </span>
             <div>
               <div className="font-display text-sm font-bold text-slate-900">Smart seat finder</div>
@@ -252,7 +248,7 @@ export default function EventPage() {
           </label>
 
           <div className="flex flex-wrap gap-1.5">
-            {PREFS.map(([p, icon]) => (
+            {PREFS.map((p) => (
               <button
                 key={p}
                 type="button"
@@ -263,7 +259,7 @@ export default function EventPage() {
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                 }`}
               >
-                {icon} {p}
+                {p}
               </button>
             ))}
           </div>
@@ -283,7 +279,7 @@ export default function EventPage() {
             >
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-100 bg-violet-50 p-4">
                 <div className="flex-1 text-sm text-violet-950">
-                  <span className="mr-2">💡</span>{rec.reason}
+                  {rec.reason}
                   <span className="ml-2 rounded-full border border-violet-200 bg-white px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-500">
                     {rec.source}{rec.model ? ` · ${rec.model}` : ''}
                   </span>
@@ -327,7 +323,7 @@ export default function EventPage() {
         )}
         {authStatus !== 'authed' && !isLoading && (
           <p className="mt-6 text-center text-sm text-slate-500">
-            👀 You&apos;re browsing live data — <Link to="/login" state={{ from: location }} className="font-medium text-violet-700 underline">sign in</Link> to grab a seat.
+            You&apos;re browsing live data — <Link to="/login" state={{ from: location }} className="font-medium text-violet-700 underline">sign in</Link> to grab a seat.
           </p>
         )}
       </motion.section>

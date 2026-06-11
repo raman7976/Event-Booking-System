@@ -9,6 +9,7 @@ import {
 } from '../services/api.js';
 import { useCountUp } from '../hooks/useCountUp.js';
 import { useToast } from '../components/ui/Toast.jsx';
+import Icon from '../components/ui/Icon.jsx';
 
 const emptySection = () => ({ rows: 'A,B', cols: 8, category: 'GENERAL', price: 50 });
 
@@ -78,8 +79,8 @@ export default function AdminPage() {
           Admin <span className="text-gradient">panel</span>
         </h1>
         <div className="flex items-center gap-2">
-          <Link to="/admin/bus" className="btn-ghost !py-1.5 text-xs">🚌 Bus timetable →</Link>
-          <span className="chip !border-violet-200 !bg-violet-50 !text-violet-700">👑 admin access</span>
+          <Link to="/admin/bus" className="btn-ghost !py-1.5 text-xs"><Icon name="bus" size={14} /> Bus timetable →</Link>
+          <span className="chip !border-violet-200 !bg-violet-50 !text-violet-700"><Icon name="shield" size={12} /> admin access</span>
         </div>
       </div>
 
@@ -126,15 +127,15 @@ export default function AdminPage() {
                     </td>
                     <td className="py-3">
                       <div className="flex gap-1.5">
-                        <Link to={`/events/${ev.id}/dashboard`} className="btn-ghost !rounded-lg !px-2 !py-1 text-[11px]">📊</Link>
-                        <Link to={`/events/${ev.id}`} className="btn-ghost !rounded-lg !px-2 !py-1 text-[11px]">🪑</Link>
+                        <Link to={`/events/${ev.id}/dashboard`} className="btn-ghost !rounded-lg !px-2 !py-1 text-[11px]"><Icon name="chart" size={13} /></Link>
+                        <Link to={`/events/${ev.id}`} className="btn-ghost !rounded-lg !px-2 !py-1 text-[11px]"><Icon name="pointer" size={13} /></Link>
                         <button
                           type="button"
                           onClick={() => deleteMut.mutate(ev.id)}
                           disabled={deleteMut.isPending}
                           className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
                         >
-                          🗑
+                          <Icon name="trash" size={13} />
                         </button>
                       </div>
                     </td>
@@ -197,7 +198,7 @@ export default function AdminPage() {
             </div>
 
             <button type="submit" disabled={createMut.isPending} className="btn-primary w-full !py-2.5">
-              {createMut.isPending ? 'Creating…' : '🎪 Create event'}
+              {createMut.isPending ? 'Creating…' : 'Create event'}
             </button>
           </div>
         </motion.form>

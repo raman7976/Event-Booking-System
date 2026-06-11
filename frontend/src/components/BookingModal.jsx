@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import ProgressRing from './ui/ProgressRing.jsx';
+import Icon from './ui/Icon.jsx';
 
 const formatCard = (v) => v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
 const formatExp = (v) => {
@@ -115,7 +116,7 @@ export default function BookingModal({ seat, hold, onConfirm, onCancel, busy, er
                   Processing…
                 </>
               ) : (
-                <>🔒 Pay ${seat.price}</>
+                <><Icon name="lock" size={15} /> Pay ${seat.price}</>
               )}
             </button>
             <p className="text-center text-[11px] text-slate-400">

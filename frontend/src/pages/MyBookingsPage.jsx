@@ -6,6 +6,7 @@ import { myBookings, busMyTrips } from '../services/api.js';
 import { eventMedia, coverErrorHandler } from '../lib/eventMedia.js';
 import CountdownTimer from '../components/CountdownTimer.jsx';
 import { MY_CHIP, MY_CHIP_LABEL } from './BusSchedulePage.jsx';
+import Icon from '../components/ui/Icon.jsx';
 
 const STATUS_CHIP = {
   confirmed: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -26,7 +27,7 @@ function BusTripsTab() {
   if (!trips.length) {
     return (
       <div className="glass p-12 text-center">
-        <div className="text-4xl">🚌</div>
+        <Icon name="bus" size={40} className="mx-auto text-slate-300" />
         <p className="mt-3 font-display font-semibold text-slate-800">No bus trips yet</p>
         <p className="mt-1 text-sm text-slate-500">Booking opens one hour before each departure.</p>
         <Link to="/bus" className="btn-primary mt-5">Today&apos;s schedule</Link>
@@ -93,7 +94,7 @@ export default function MyBookingsPage() {
       </h1>
 
       <div className="mb-6 inline-flex rounded-xl border border-slate-200 bg-white p-1">
-        {[['bus', '🚌 Bus trips'], ['events', '🎟️ Events']].map(([key, label]) => (
+        {[['bus', 'Bus trips'], ['events', 'Events']].map(([key, label]) => (
           <button
             key={key}
             type="button"
@@ -118,7 +119,7 @@ export default function MyBookingsPage() {
 
       {!isLoading && bookings.length === 0 && (
         <div className="glass p-12 text-center">
-          <div className="text-4xl">🎫</div>
+          <Icon name="ticket" size={40} className="mx-auto text-slate-300" />
           <p className="mt-3 font-display font-semibold text-slate-800">No tickets yet</p>
           <p className="mt-1 text-sm text-slate-500">Grab a seat — it takes under a minute.</p>
           <Link to="/" className="btn-primary mt-5">Browse events</Link>
@@ -153,7 +154,7 @@ export default function MyBookingsPage() {
                 <div>
                   <div className="font-display font-bold text-slate-900">{b.event.name}</div>
                   <div className="mt-0.5 text-sm text-slate-500">
-                    📍 {b.event.venue} · {new Date(b.event.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                    <Icon name="pin" size={12} className="-mt-0.5 mr-1" />{b.event.venue} · {new Date(b.event.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                   </div>
                   <div className="mt-1.5 text-sm text-slate-700">
                     Seat <b>{b.seat.row}{b.seat.number}</b>

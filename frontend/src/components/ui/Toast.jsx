@@ -2,6 +2,7 @@
 // Slide-in stack, auto-dismiss, pause-free and stateless for callers.
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import Icon from './Icon.jsx';
 
 const ToastCtx = createContext(null);
 
@@ -9,7 +10,7 @@ const STYLES = {
   success: { ring: 'ring-emerald-200', icon: '✓', iconBg: 'bg-emerald-100 text-emerald-700' },
   error: { ring: 'ring-rose-200', icon: '✕', iconBg: 'bg-rose-100 text-rose-700' },
   info: { ring: 'ring-violet-200', icon: 'ℹ', iconBg: 'bg-violet-100 text-violet-700' },
-  live: { ring: 'ring-cyan-200', icon: '⚡', iconBg: 'bg-cyan-100 text-cyan-700' },
+  live: { ring: 'ring-cyan-200', icon: <Icon name="bolt" size={12} />, iconBg: 'bg-cyan-100 text-cyan-700' },
 };
 
 export function ToastProvider({ children }) {

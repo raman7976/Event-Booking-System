@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import { apiError } from '../services/api.js';
 import AuthLayout from '../components/AuthLayout.jsx';
 import PasswordInput from '../components/PasswordInput.jsx';
+import Icon from '../components/ui/Icon.jsx';
 
 export default function LoginPage() {
   const { login, status, user } = useAuth();
@@ -75,13 +76,13 @@ export default function LoginPage() {
         <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Try the demo</div>
         <div className="flex gap-2">
           <button type="button" onClick={() => quickFill('demo@demo.local', 'password123')} className="btn-ghost flex-1 !py-2 text-xs">
-            👤 User account
+            <Icon name="user" size={13} /> User account
           </button>
           <button
             type="button" onClick={() => quickFill('admin@demo.local', 'Admin@1234')}
-            className="flex-1 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 transition hover:bg-violet-100"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 transition hover:bg-violet-100"
           >
-            👑 Admin account
+            <Icon name="shield" size={13} /> Admin account
           </button>
         </div>
       </div>

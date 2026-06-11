@@ -15,6 +15,7 @@ import RollNumberGate from '../components/RollNumberGate.jsx';
 import CountdownTimer from '../components/CountdownTimer.jsx';
 import ProgressRing from '../components/ui/ProgressRing.jsx';
 import { TRIP_CHIP, TRIP_CHIP_LABEL } from './BusSchedulePage.jsx';
+import Icon from '../components/ui/Icon.jsx';
 
 const hhmm = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -34,7 +35,7 @@ export default function BusTripPage() {
   });
 
   const onPromoted = useCallback(
-    () => toast.push("You're off the waitlist — seat assigned on this bus! 🎉", 'live', 8000),
+    () => toast.push("You're off the waitlist — seat assigned on this bus!", 'live', 8000),
     [toast],
   );
   useBusTripLive(id, { onPromoted });
@@ -82,7 +83,7 @@ export default function BusTripPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-blue-600 text-lg text-white shadow-glow-sm">🚌</span>
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-blue-600 text-white shadow-glow-sm"><Icon name="bus" size={22} className="text-white" /></span>
               <div>
                 <h1 className="font-display text-2xl font-extrabold text-slate-900">
                   {trip.origin} → {trip.destination}
@@ -181,7 +182,7 @@ export default function BusTripPage() {
         {mine === 'assigned' && !confirmWindow && (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-600">
-              ✅ Seat assigned. Confirm boarding from <b className="text-slate-900">{hhmm(trip.times.confirmAt)}</b>,
+              <Icon name="check-circle" size={15} className="-mt-0.5 mr-1.5 text-emerald-600" />Seat assigned. Confirm boarding from <b className="text-slate-900">{hhmm(trip.times.confirmAt)}</b>,
               or your seat is auto-released at {hhmm(trip.times.releaseAt)}.
             </p>
             <button type="button" disabled={busy} onClick={act(busCancel, 'Booking cancelled — seat freed.')} className="btn-ghost !text-rose-600">
@@ -216,7 +217,7 @@ export default function BusTripPage() {
         {mine === 'confirmed' && trip.status !== 'departed' && (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-700">
-              🎫 <b className="text-emerald-700">Boarding confirmed.</b> Show up a few minutes early —
+              <Icon name="check-circle" size={15} className="-mt-0.5 mr-1.5 text-emerald-600" /><b className="text-emerald-700">Boarding confirmed.</b> Show up a few minutes early —
               Bus {trip.busNo} leaves {trip.origin} at <b>{hhmm(trip.departureAt)}</b> sharp.
             </p>
             <button type="button" disabled={busy} onClick={act(busDecline, 'Seat released to the waitlist.')} className="btn-ghost !text-rose-600 !py-1.5 text-xs">
@@ -240,7 +241,7 @@ export default function BusTripPage() {
 
         {trip.status === 'departed' && (
           <p className="text-sm text-slate-500">
-            🏁 This bus has departed{mine === 'confirmed' ? ' — hope you caught it!' : '.'}
+            This bus has departed{mine === 'confirmed' ? ' — hope you caught it!' : '.'}
           </p>
         )}
       </motion.section>

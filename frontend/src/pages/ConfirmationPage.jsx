@@ -2,6 +2,7 @@ import { useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Confetti from '../components/ui/Confetti.jsx';
 import { eventMedia, coverErrorHandler } from '../lib/eventMedia.js';
+import Icon from '../components/ui/Icon.jsx';
 
 // Real client-side "Add to calendar": builds an .ics VEVENT data URI.
 function icsHref(event, seat) {
@@ -86,7 +87,7 @@ export default function ConfirmationPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute bottom-3 left-5 right-5">
             <h1 className="font-display text-xl font-bold text-white drop-shadow">{event.name}</h1>
-            <p className="text-xs text-slate-200">📍 {event.venue}</p>
+            <p className="text-xs text-slate-200"><Icon name="pin" size={11} className="-mt-0.5 mr-1" />{event.venue}</p>
           </div>
           <span className="chip-onmedia absolute right-4 top-4 !text-emerald-200">✓ CONFIRMED</span>
         </div>
@@ -119,7 +120,7 @@ export default function ConfirmationPage() {
         className="mt-6 flex flex-wrap justify-center gap-3"
       >
         <a href={icsHref(event, seat)} download={`seatlive-${seat.row}${seat.number}.ics`} className="btn-primary">
-          🗓 Add to calendar
+          <Icon name="calendar" size={15} /> Add to calendar
         </a>
         <Link to="/my-bookings" className="btn-ghost">My bookings</Link>
         <Link to={`/events/${event.id}`} className="btn-ghost">Back to seat map</Link>
