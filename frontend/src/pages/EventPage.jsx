@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../hooks/useAuth.js';
 import {
   getEvent, recommend as apiRecommend,
   joinWaitlist, leaveWaitlist, getWaitlist, apiError,
@@ -17,6 +18,13 @@ const PREFS = ['together', 'aisle', 'front', 'back'];
 export default function EventPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { status: authStatus, isAdmin } = useAuth();
+
+  // Booking requires a signed-in user; browsing doesn't.
+  const requireLogin = () => {
+    navigate('/login', { state: { from: location } });
+  };
 
   const [notice, setNotice] = useState(null);
   const onWaitlistAvailable = useCallback(
@@ -50,6 +58,7 @@ export default function EventPage() {
     setPrefs((prev) => { const n = new Set(prev); if (n.has(p)) n.delete(p); else n.add(p); return n; });
 
   const onSeatClick = async (seat) => {
+    if (authStatus !== 'authed') return requireLogin();
     setConfirmError(null);
     if (seat.heldByMe && holdsBySeat[seat.id]) { setModalSeat(seat); return; }
     try {
@@ -95,6 +104,7 @@ export default function EventPage() {
 
   // One-click hold of all recommended seats; compensating release on partial failure.
   const holdRecommended = async () => {
+    if (authStatus !== 'authed') return requireLogin();
     if (!rec?.recommendedSeatIds?.length) return;
     const held = [];
     try {
@@ -116,6 +126,7 @@ export default function EventPage() {
   };
 
   const doJoinWaitlist = async () => {
+    if (authStatus !== 'authed') return requireLogin();
     setWlBusy(true);
     try { await joinWaitlist(id); await refetchWaitlist(); } catch (err) { setNotice({ type: 'bad', msg: apiError(err) }); } finally { setWlBusy(false); }
   };
@@ -132,7 +143,9 @@ export default function EventPage() {
           <h1 className="text-2xl font-bold">{event?.name || 'Event'}</h1>
           {event && <p className="text-sm text-slate-400">{event.venue} · {new Date(event.event_date).toLocaleString()}</p>}
         </div>
-        <Link to={`/events/${id}/dashboard`} className="rounded bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600">Dashboard →</Link>
+        {isAdmin && (
+          <Link to={`/events/${id}/dashboard`} className="rounded bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600">Dashboard →</Link>
+        )}
       </div>
 
       {notice && (

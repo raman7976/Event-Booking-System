@@ -1,58 +1,71 @@
-// All HTTP calls. baseURL '/api' is proxied by Vite to nginx in dev. A JWT is
-// kept in localStorage; for a frictionless demo we auto-create a guest account.
+// HTTP layer. The access token lives in MEMORY only (never localStorage — XSS
+// can't read it); sessions survive reloads via the httpOnly refresh cookie:
+// on boot AuthContext calls refreshSession(), and any 401 triggers one silent
+// refresh + retry (single-flight so parallel 401s share one refresh call).
 import axios from 'axios';
-
-const TOKEN_KEY = 'bk_token';
-const USER_KEY = 'bk_user';
 
 export const api = axios.create({ baseURL: '/api' });
 
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
-export const getUser = () => {
-  try { return JSON.parse(localStorage.getItem(USER_KEY)); } catch { return null; }
-};
-const setAuth = (token, user) => {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
-};
-export const clearAuth = () => {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-};
+let accessToken = null;
+let sessionHandlers = {};
+
+export const getAccessToken = () => accessToken;
+export const setAccessToken = (t) => { accessToken = t; };
+/** AuthContext registers callbacks so the interceptor can sync React state. */
+export const bindSessionHandlers = (handlers) => { sessionHandlers = handlers; };
 
 api.interceptors.request.use((config) => {
-  const t = getToken();
-  if (t) config.headers.Authorization = `Bearer ${t}`;
+  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
   return config;
 });
 
+let refreshInFlight = null;
+export function refreshSession() {
+  refreshInFlight =
+    refreshInFlight ||
+    axios
+      .post('/api/auth/refresh')
+      .then(({ data }) => {
+        accessToken = data.token;
+        sessionHandlers.onSession?.(data.user);
+        return data;
+      })
+      .finally(() => { refreshInFlight = null; });
+  return refreshInFlight;
+}
+
+api.interceptors.response.use(
+  (r) => r,
+  async (err) => {
+    const original = err.config || {};
+    const isAuthCall = (original.url || '').startsWith('/auth');
+    if (err.response?.status === 401 && accessToken && !original._retry && !isAuthCall) {
+      original._retry = true;
+      try {
+        await refreshSession();
+        return api(original);
+      } catch {
+        accessToken = null;
+        sessionHandlers.onSessionLost?.();
+      }
+    }
+    throw err;
+  },
+);
+
 export const apiError = (err) =>
   err?.response?.data?.error?.message || err?.message || 'Something went wrong';
-export const apiErrorCode = (err) => err?.response?.data?.error?.code || null;
+export const apiFieldErrors = (err) => err?.response?.data?.error?.details || null;
 
 // ── Auth ──
-export async function register(email, password, name) {
-  const { data } = await api.post('/auth/register', { email, password, name });
-  setAuth(data.token, data.user);
-  return data.user;
-}
-export async function login(email, password) {
-  const { data } = await api.post('/auth/login', { email, password });
-  setAuth(data.token, data.user);
-  return data.user;
-}
-export async function ensureGuest() {
-  if (getToken() && getUser()) return getUser();
-  const rnd = Math.random().toString(36).slice(2, 7);
-  return register(`guest_${rnd}_${Date.now()}@guests.local`, 'guestpass123', `Guest-${rnd}`);
-}
-export async function newGuest() {
-  clearAuth();
-  return ensureGuest();
-}
+export const loginRequest = (email, password) =>
+  api.post('/auth/login', { email, password }).then((r) => r.data);
+export const registerRequest = (name, email, password) =>
+  api.post('/auth/register', { name, email, password }).then((r) => r.data);
+export const logoutRequest = () => api.post('/auth/logout').then((r) => r.data);
 
 // ── Events ──
-export const listEvents = (page = 1, limit = 20) =>
+export const listEvents = (page = 1, limit = 50) =>
   api.get('/events', { params: { page, limit } }).then((r) => r.data);
 export const getEvent = (id) => api.get(`/events/${id}`).then((r) => r.data);
 export const getEventStats = (id) => api.get(`/events/${id}/stats`).then((r) => r.data);
@@ -74,3 +87,10 @@ export const myBookings = () => api.get('/bookings/mine').then((r) => r.data.boo
 export const joinWaitlist = (eventId) => api.post(`/waitlist/${eventId}`).then((r) => r.data);
 export const leaveWaitlist = (eventId) => api.delete(`/waitlist/${eventId}`).then((r) => r.data);
 export const getWaitlist = (eventId) => api.get(`/waitlist/${eventId}`).then((r) => r.data);
+
+// ── Admin ──
+export const adminOverview = () => api.get('/admin/overview').then((r) => r.data);
+export const adminCreateEvent = (payload) => api.post('/admin/events', payload).then((r) => r.data);
+export const adminDeleteEvent = (id) => api.delete(`/admin/events/${id}`).then((r) => r.data);
+export const adminEventBookings = (id) =>
+  api.get(`/admin/events/${id}/bookings`).then((r) => r.data.bookings);
