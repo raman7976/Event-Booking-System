@@ -7,11 +7,13 @@ export const QUEUE_NAMES = {
   expiry: 'seat-expiry',
   email: 'email',
   waitlist: 'waitlist',
+  bus: 'bus-lifecycle',
 };
 
 export const expiryQueue = new Queue(QUEUE_NAMES.expiry, { connection: bullConnection });
 export const emailQueue = new Queue(QUEUE_NAMES.email, { connection: bullConnection });
 export const waitlistQueue = new Queue(QUEUE_NAMES.waitlist, { connection: bullConnection });
+export const busQueue = new Queue(QUEUE_NAMES.bus, { connection: bullConnection });
 
 // NOTE: BullMQ custom job ids may not contain ':' — use a hyphen.
 const expiryJobId = (holdToken) => `expiry-${holdToken}`;
@@ -58,6 +60,38 @@ export async function enqueueWaitlistNotify(payload) {
   });
 }
 
+/**
+ * Bus lifecycle job with a stable id (idempotent re-scheduling: BullMQ ignores
+ * an add when a job with the same id already exists).
+ */
+export async function scheduleBusJob(name, payload, delayMs, jobId) {
+  return busQueue.add(name, payload, {
+    jobId,
+    delay: Math.max(0, delayMs),
+    removeOnComplete: true,
+    removeOnFail: 500,
+  });
+}
+
+/** Daily trip generation at 00:05 server time (worker also runs one on boot). */
+export async function ensureDailyBusGeneration() {
+  return busQueue.add(
+    'generate-trips',
+    {},
+    {
+      repeat: { pattern: '5 0 * * *' },
+      jobId: 'generate-trips-daily',
+      removeOnComplete: true,
+      removeOnFail: 100,
+    },
+  );
+}
+
 export async function closeQueues() {
-  await Promise.allSettled([expiryQueue.close(), emailQueue.close(), waitlistQueue.close()]);
+  await Promise.allSettled([
+    expiryQueue.close(),
+    emailQueue.close(),
+    waitlistQueue.close(),
+    busQueue.close(),
+  ]);
 }

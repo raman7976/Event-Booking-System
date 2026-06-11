@@ -6,6 +6,7 @@ import seatRoutes from './seats.js';
 import bookingRoutes from './bookings.js';
 import waitlistRoutes from './waitlist.js';
 import adminRoutes from './admin.js';
+import busRoutes from './bus.js';
 
 const api = Router();
 
@@ -15,5 +16,6 @@ api.use('/seats', seatRoutes);
 api.use('/bookings', bookingRoutes);
 api.use('/waitlist', waitlistRoutes);
 api.use('/admin', adminRoutes);
+api.use('/bus', busRoutes);
 
 export default api;

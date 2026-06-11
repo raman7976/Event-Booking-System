@@ -9,9 +9,10 @@ import { closeQueues } from '../config/queues.js';
 import { startExpiryWorker } from './expiryWorker.js';
 import { startEmailWorker } from './emailWorker.js';
 import { startWaitlistWorker } from './waitlistWorker.js';
+import { startBusWorker } from './busWorker.js';
 
-const workers = [startExpiryWorker(), startEmailWorker(), startWaitlistWorker()];
-logger.info(`[workers] started expiry + email + waitlist (instance ${config.instanceId})`);
+const workers = [startExpiryWorker(), startEmailWorker(), startWaitlistWorker(), startBusWorker()];
+logger.info(`[workers] started expiry + email + waitlist + bus (instance ${config.instanceId})`);
 
 const health = http.createServer((req, res) => {
   if (req.url === '/health') {
