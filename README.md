@@ -89,7 +89,12 @@ cd frontend && npm install && npm run dev
 # open http://localhost:5173
 ```
 
-Demo login (or just let the app auto-create a guest): **demo@demo.local / password123**
+Demo accounts (seeded):
+
+| Role | Email | Password | Sees |
+|------|-------|----------|------|
+| user | demo@demo.local | password123 | browse, book, waitlist, My Bookings |
+| admin | admin@demo.local | Admin@1234 | everything + Admin panel, dashboards, event CRUD |
 
 > **After rebuilding the app containers** (`docker compose up -d --build node_app_1 …`),
 > restart nginx so it re-resolves the new container IPs: `docker compose restart nginx`.
@@ -104,7 +109,9 @@ Copy `.env.example` → `.env`. Compose supplies its own values per container
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `PORT` | 3000 | API/WS port per instance (3000 / 3001) |
-| `JWT_SECRET` / `JWT_EXPIRES_IN` | dev / 24h | Auth token signing |
+| `JWT_SECRET` | dev | Token signing secret |
+| `ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL_DAYS` | 15m / 7 | Short-lived access JWT; rotating refresh token (httpOnly cookie) |
+| `COOKIE_SECURE` | false | Set true behind HTTPS (Secure flag on the refresh cookie) |
 | `PG_PRIMARY_HOST/PORT` | localhost / 5432 | Write pool |
 | `PG_REPLICA_HOST/PORT` | localhost / 5433 | Read pool |
 | `PG_USER/PASSWORD/DATABASE` | booking / booking_pass / booking | Postgres creds |
@@ -136,13 +143,26 @@ Copy `.env.example` → `.env`. Compose supplies its own values per container
 
 ## API
 
+### Authentication model
+
+- **Access token**: 15-minute JWT carrying `{ sub, email, name, role }`, kept **in memory** on the client (never localStorage).
+- **Refresh token**: 7-day JWT whose one-time id (`jti`) lives in Redis. Delivered as an **httpOnly cookie** scoped to `/api/auth`. Every `/refresh` **rotates** it (atomic `GETDEL`) — replaying a consumed token returns 401, and logout revokes it server-side.
+- **RBAC**: `user` vs `admin` role claim, enforced by `requireRole` middleware (`/api/admin/*`, stats) and mirrored by frontend route guards.
+- **Login hardening**: lockout after 5 failed attempts per email per 15 min; bcrypt compare runs even for unknown emails; password policy (8+ chars, letter + number).
+
 | Method | Route | Auth | Notes |
 |--------|-------|------|-------|
-| POST | `/api/auth/register` · `/api/auth/login` | — | `{ token, user }` |
+| POST | `/api/auth/register` · `/api/auth/login` | — | `{ token, user }` + refresh cookie |
+| POST | `/api/auth/refresh` · `/api/auth/logout` | cookie | rotate / revoke the session |
+| GET | `/api/auth/me` | ✓ | current user (fresh from DB) |
+| GET | `/api/admin/overview` | admin | cross-event totals |
+| POST | `/api/admin/events` | admin | create event + seat layout |
+| DELETE | `/api/admin/events/:id` | admin | blocked while confirmed bookings exist |
+| GET | `/api/admin/events/:id/bookings` | admin | who booked what |
 | GET | `/api/events?page&limit` | — | paginated |
 | GET | `/api/events/:id` | — | event + seat summary |
 | GET | `/api/events/:id/seats` | optional | live seat list (`heldByMe`) |
-| GET | `/api/events/:id/stats` | — | dashboard analytics |
+| GET | `/api/events/:id/stats` | admin | dashboard analytics |
 | POST | `/api/seats/:id/hold` | ✓ | `{ eventId }` → hold token |
 | DELETE | `/api/seats/:id/hold` | ✓ | `{ holdToken }` |
 | POST | `/api/seats/recommend` | — | `{ eventId, groupSize, maxBudget, preferences }` |
