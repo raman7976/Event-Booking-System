@@ -13,6 +13,7 @@ import AdminPage from './pages/AdminPage.jsx';
 import MyBookingsPage from './pages/MyBookingsPage.jsx';
 import BusSchedulePage from './pages/BusSchedulePage.jsx';
 import BusTripPage from './pages/BusTripPage.jsx';
+import BusAdminPage from './pages/BusAdminPage.jsx';
 
 function PageSpinner() {
   return (
@@ -201,6 +202,7 @@ export default function App() {
               <Route path="/my-bookings" element={<RequireAuth><MyBookingsPage /></RequireAuth>} />
               <Route path="/confirmation" element={<RequireAuth><ConfirmationPage /></RequireAuth>} />
               <Route path="/admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
+              <Route path="/admin/bus" element={<RequireAdmin><BusAdminPage /></RequireAdmin>} />
               <Route path="/events/:id/dashboard" element={<RequireAdmin><DashboardPage /></RequireAdmin>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

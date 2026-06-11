@@ -97,14 +97,26 @@ export async function generateTripsForDate(dateStr) {
       `INSERT INTO bus_trips (schedule_id, service_date, departure_at, capacity, status)
        VALUES ($1, $2, $3, $4, 'scheduled')
        ON CONFLICT (schedule_id, service_date) DO NOTHING
-       RETURNING id, departure_at`,
+       RETURNING id`,
       [s.id, dateStr, departureAt, s.capacity],
     );
-    if (!rows.length) continue; // already generated
-    created += 1;
-    await scheduleTripLifecycle(rows[0].id, rows[0].departure_at);
+    if (rows.length) created += 1;
   }
-  logger.info(`[bus] generated ${created} trip(s) for ${dateStr} (${weekend ? 'weekend/holiday' : 'weekday'} timetable)`);
+
+  // Self-healing: (re)schedule lifecycle jobs for EVERY trip of the date, not
+  // just freshly created ones. Stable job ids skip still-pending jobs, and all
+  // phase handlers are SQL-idempotent, so re-running an already-executed phase
+  // is a no-op — a worker that missed a phase (redeploy, crash) catches up here.
+  const { rows: trips } = await writePool.query(
+    `SELECT id, departure_at FROM bus_trips
+      WHERE service_date = $1 AND status NOT IN ('departed','cancelled')`,
+    [dateStr],
+  );
+  for (const t of trips) {
+    await scheduleTripLifecycle(t.id, t.departure_at);
+  }
+
+  logger.info(`[bus] generated ${created} trip(s) for ${dateStr}, rescheduled jobs for ${trips.length} (${weekend ? 'weekend/holiday' : 'weekday'} timetable)`);
   return created;
 }
 

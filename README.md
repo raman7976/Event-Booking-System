@@ -185,6 +185,37 @@ event:{eventId}:seats        HASH  field=seatId value=status
 
 ---
 
+## Campus bus vertical (LNMIIT)
+
+A second product vertical on the same platform: the institute's daily shuttle
+(timetable w.e.f. Oct 31, 2025 — Mon–Fri + Sat/Sun/Holiday tables, seeded).
+
+**Rules**
+- Booking opens **60 min** before departure; free; **one seat per rider per trip**; no seat
+  selection — the system assigns a seat or you join the queue.
+- Requires an **@lnmiit.ac.in** account with a **roll number** on the profile (set once at
+  registration or via `PATCH /api/auth/me`).
+- From **T-20 min** riders must confirm boarding; an explicit "Not boarding" frees the seat
+  immediately. At **T-10 min** unconfirmed seats are auto-released (holder gets a no-show) and
+  handed to the **public FIFO waitlist** (visible to everyone: name + roll + position).
+- Daily trips are generated from the timetable at 00:05 (holiday dates use the weekend table;
+  Bus 3 has Monday-only and Friday-only runs). Admins manage rows/capacity/holidays and see
+  per-trip manifests at `/admin/bus`.
+
+**Env knobs** — `BUS_OPEN_SECONDS=3600`, `BUS_CONFIRM_SECONDS=1200`, `BUS_AUTORELEASE_SECONDS=600`,
+`BUS_DEFAULT_CAPACITY=40`, `BUS_EMAIL_DOMAIN=lnmiit.ac.in`, `TZ=Asia/Kolkata`.
+Campus demo accounts: `23ucs101@lnmiit.ac.in` / `Student@123` (and `23ucs102`),
+admin `admin@lnmiit.ac.in` / `Admin@1234`.
+
+**ADR — two concurrency strategies, on purpose.** The events vertical guards *individual seats*
+with atomic Redis Lua locks (sub-ms holds, natural TTL expiry, horizontal fan-out). The bus
+vertical guards a *capacity counter* with a single Postgres conditional update
+(`SET booked_count = booked_count + 1 WHERE booked_count < capacity`) in the same transaction as
+the booking upsert — no TTL semantics needed, the seat count and the booking commit or roll back
+together, and `UNIQUE(trip_id, user_id)` + `FOR UPDATE SKIP LOCKED` (waitlist promotion) make
+over-booking and queue-jumping impossible. Rule of thumb: per-resource locks + TTL ⇒ Redis;
+transactional counters with relational invariants ⇒ Postgres.
+
 ## AI: Smart Seat Recommender
 
 `POST /api/seats/recommend` reads available seats from the **replica**, sends them

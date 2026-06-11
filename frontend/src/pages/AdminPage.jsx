@@ -77,7 +77,10 @@ export default function AdminPage() {
         <h1 className="font-display text-2xl font-extrabold text-slate-900 sm:text-3xl">
           Admin <span className="text-gradient">panel</span>
         </h1>
-        <span className="chip !border-violet-200 !bg-violet-50 !text-violet-700">👑 admin access</span>
+        <div className="flex items-center gap-2">
+          <Link to="/admin/bus" className="btn-ghost !py-1.5 text-xs">🚌 Bus timetable →</Link>
+          <span className="chip !border-violet-200 !bg-violet-50 !text-violet-700">👑 admin access</span>
+        </div>
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">

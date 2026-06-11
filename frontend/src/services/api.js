@@ -102,6 +102,17 @@ export const busDecline = (id) => api.post(`/bus/trips/${id}/decline`).then((r) 
 export const busJoinWaitlist = (id) => api.post(`/bus/trips/${id}/waitlist`).then((r) => r.data);
 export const busLeaveWaitlist = (id) => api.delete(`/bus/trips/${id}/waitlist`).then((r) => r.data);
 
+// bus admin
+export const busAdminSchedules = () => api.get('/bus/admin/schedules').then((r) => r.data.schedules);
+export const busAdminCreateSchedule = (p) => api.post('/bus/admin/schedules', p).then((r) => r.data);
+export const busAdminUpdateSchedule = (id, p) => api.put(`/bus/admin/schedules/${id}`, p).then((r) => r.data);
+export const busAdminDeleteSchedule = (id) => api.delete(`/bus/admin/schedules/${id}`).then((r) => r.data);
+export const busAdminHolidays = () => api.get('/bus/admin/holidays').then((r) => r.data.holidays);
+export const busAdminAddHoliday = (p) => api.post('/bus/admin/holidays', p).then((r) => r.data);
+export const busAdminRemoveHoliday = (day) => api.delete(`/bus/admin/holidays/${day}`).then((r) => r.data);
+export const busAdminManifest = (id) => api.get(`/bus/admin/trips/${id}/manifest`).then((r) => r.data);
+export const busAdminGenerate = (date) => api.post('/bus/admin/generate', date ? { date } : {}).then((r) => r.data);
+
 // ── Admin ──
 export const adminOverview = () => api.get('/admin/overview').then((r) => r.data);
 export const adminCreateEvent = (payload) => api.post('/admin/events', payload).then((r) => r.data);
