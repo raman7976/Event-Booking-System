@@ -52,6 +52,17 @@ export const config = {
     model: process.env.GEMINI_MODEL || 'gemini-2.5-pro',
   },
 
+  // Campus bus vertical. Windows are stored in seconds so tests can shrink the
+  // whole lifecycle (BUS_*_SECONDS); production uses the minute-scale defaults.
+  bus: {
+    openSeconds: int(process.env.BUS_OPEN_SECONDS, 60 * 60),         // booking opens T-60m
+    confirmSeconds: int(process.env.BUS_CONFIRM_SECONDS, 20 * 60),   // confirmation from T-20m
+    autoReleaseSeconds: int(process.env.BUS_AUTORELEASE_SECONDS, 10 * 60), // sweep at T-10m
+    defaultCapacity: int(process.env.BUS_DEFAULT_CAPACITY, 40),
+    emailDomain: (process.env.BUS_EMAIL_DOMAIN || 'lnmiit.ac.in').toLowerCase(),
+    timezone: process.env.TZ || 'Asia/Kolkata',
+  },
+
   mail: {
     host: process.env.SMTP_HOST || '',
     port: int(process.env.SMTP_PORT, 0),

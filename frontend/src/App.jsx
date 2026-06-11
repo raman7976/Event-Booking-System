@@ -77,13 +77,9 @@ function Header() {
 
   const linkClass = ({ isActive }) =>
     `border-b-2 pb-0.5 text-[12px] font-semibold uppercase tracking-[0.16em] transition-colors ${
-      onMedia
-        ? isActive
-          ? 'border-white text-white'
-          : 'border-transparent text-white/75 hover:text-white'
-        : isActive
-          ? 'border-violet-600 text-slate-900'
-          : 'border-transparent text-slate-500 hover:text-slate-900'
+      isActive
+        ? 'border-slate-950 text-slate-950 font-bold'
+        : 'border-transparent text-slate-500 hover:text-slate-950'
     }`;
 
   const doLogout = async () => {
@@ -95,16 +91,16 @@ function Header() {
     <header
       className={`fixed inset-x-0 top-0 z-40 transition-all duration-300 ${
         onMedia
-          ? 'bg-transparent'
-          : 'bg-white/85 shadow-[0_1px_0_rgba(15,23,42,0.06)] backdrop-blur-md'
+          ? 'bg-white/40 border-b border-white/40 backdrop-blur-sm shadow-[0_1px_3px_rgba(15,23,42,0.02)]'
+          : 'bg-white/80 border-b border-slate-200/50 backdrop-blur-md shadow-[0_1px_3px_rgba(15,23,42,0.03)]'
       }`}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
         <Link to="/" className="group flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-sm shadow-glow-sm transition-transform group-hover:rotate-6">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-950 text-sm shadow-sm transition-transform group-hover:rotate-6">
             🎟️
           </span>
-          <span className={`font-display text-lg font-bold tracking-tight ${onMedia ? 'text-white' : 'text-slate-900'}`}>
+          <span className="font-display text-lg font-bold tracking-tight text-slate-900">
             Seat<span className="text-gradient">Live</span>
           </span>
         </Link>
@@ -120,17 +116,15 @@ function Header() {
         <div className="flex items-center gap-2.5 text-sm">
           {status === 'authed' ? (
             <>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 font-display text-xs font-bold uppercase text-white">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 font-display text-xs font-bold uppercase text-white shadow-sm">
                 {user.name?.[0] || '?'}
               </span>
-              <span className={`hidden md:inline ${onMedia ? 'text-white/90' : 'text-slate-700'}`}>{user.name}</span>
+              <span className="hidden md:inline text-slate-700 font-medium">{user.name}</span>
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                   isAdmin
-                    ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white'
-                    : onMedia
-                      ? 'border border-white/30 bg-white/10 text-white'
-                      : 'border border-slate-200 bg-white text-slate-600'
+                    ? 'bg-slate-950 text-white'
+                    : 'border border-slate-200/60 bg-white/70 text-slate-600 backdrop-blur-sm'
                 }`}
               >
                 {user.role}
@@ -138,11 +132,7 @@ function Header() {
               <button
                 type="button"
                 onClick={doLogout}
-                className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
-                  onMedia
-                    ? 'border border-white/25 bg-white/10 text-white hover:bg-white/20'
-                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                }`}
+                className="rounded-xl border border-slate-200/70 bg-white/60 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-white/95 hover:border-slate-300 transition"
               >
                 Logout
               </button>
@@ -151,11 +141,7 @@ function Header() {
             <>
               <Link
                 to="/login"
-                className={`rounded-xl px-3.5 py-1.5 text-sm font-medium transition ${
-                  onMedia
-                    ? 'border border-white/25 bg-white/10 text-white hover:bg-white/20'
-                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                }`}
+                className="rounded-xl border border-slate-200/70 bg-white/60 px-3.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-white/95 hover:border-slate-300 transition"
               >
                 Sign in
               </Link>

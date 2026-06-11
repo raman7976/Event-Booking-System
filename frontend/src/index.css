@@ -6,11 +6,11 @@
 
 /* ─── Design tokens (light, professional) ───────────────────────── */
 :root {
-  --bg: #f8fafc;
-  --ink: #0f172a;
-  --brand-a: #7c3aed; /* violet  */
-  --brand-b: #c026d3; /* fuchsia */
-  --brand-c: #0891b2; /* cyan    */
+  --bg: #ffffff;
+  --ink: #09090b;
+  --brand-a: #09090b; /* near-black */
+  --brand-b: #1e293b; /* slate-800 */
+  --brand-c: #475569; /* slate-600 */
 }
 
 html {
@@ -21,23 +21,23 @@ body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--bg);
-  color: #334155;
+  color: #1e293b;
   overflow-x: clip; /* full-bleed sections can't cause sideways scroll */
   background-image:
-    radial-gradient(900px 480px at 90% -10%, rgba(124, 58, 237, 0.05), transparent 60%),
-    radial-gradient(700px 420px at -10% 30%, rgba(192, 38, 211, 0.04), transparent 60%);
+    radial-gradient(900px 480px at 90% -10%, rgba(15, 23, 42, 0.03), transparent 60%),
+    radial-gradient(700px 420px at -10% 30%, rgba(15, 23, 42, 0.02), transparent 60%);
   background-attachment: fixed;
 }
 
 ::selection {
-  background: rgba(124, 58, 237, 0.18);
+  background: rgba(15, 23, 42, 0.08);
 }
 
 /* slim scrollbar */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.16); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.28); }
+::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.1); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.2); }
 
 /* ─── Reusable surfaces & controls ──────────────────────────────── */
 @layer components {
@@ -56,15 +56,34 @@ body {
 
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(100deg, var(--brand-a) 0%, var(--brand-b) 55%, var(--brand-c) 115%);
+    background-image: linear-gradient(100deg, var(--brand-a) 0%, var(--brand-b) 50%, var(--brand-c) 100%);
+  }
+
+  /* Soft pastel mesh for light hero sections. */
+  .hero-mesh {
+    background-image:
+      radial-gradient(650px 450px at 15% 15%, rgba(15, 23, 42, 0.04), transparent 70%),
+      radial-gradient(750px 500px at 85% 15%, rgba(15, 23, 42, 0.03), transparent 70%),
+      radial-gradient(650px 450px at 80% 85%, rgba(15, 23, 42, 0.02), transparent 70%),
+      radial-gradient(750px 500px at 20% 85%, rgba(15, 23, 42, 0.01), transparent 70%);
+  }
+
+  /* Frosted white glass cards for the light theme */
+  .glass-card {
+    @apply rounded-3xl bg-white/60 backdrop-blur-xl;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 
+      0 4px 6px -1px rgba(15, 23, 42, 0.02),
+      0 12px 30px -10px rgba(15, 23, 42, 0.06),
+      0 1px 0 0 rgba(255, 255, 255, 0.8) inset;
   }
 
   .btn-primary {
-    @apply relative inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-transform duration-200;
+    @apply relative inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200;
     background-image: linear-gradient(110deg, var(--brand-a), var(--brand-b));
-    box-shadow: 0 10px 26px -10px rgba(124, 58, 237, 0.55);
+    box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.15);
   }
-  .btn-primary:hover { transform: translateY(-1px) scale(1.015); box-shadow: 0 14px 32px -10px rgba(192, 38, 211, 0.5); }
+  .btn-primary:hover { transform: translateY(-1.5px) scale(1.015); box-shadow: 0 10px 20px -4px rgba(0, 0, 0, 0.25); }
   .btn-primary:active { transform: translateY(0) scale(0.99); }
   .btn-primary:disabled { @apply cursor-not-allowed opacity-50; transform: none; }
 
@@ -73,7 +92,7 @@ body {
   }
 
   .input-field {
-    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15;
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-950/10;
   }
 
   .chip {

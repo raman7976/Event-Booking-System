@@ -35,14 +35,26 @@ const passwordSchema = z
   .regex(/[A-Za-z]/, 'password must contain a letter')
   .regex(/[0-9]/, 'password must contain a number');
 
+const rollSchema = z
+  .string()
+  .trim()
+  .min(4, 'roll number looks too short')
+  .max(20)
+  .regex(/^[A-Za-z0-9-]+$/, 'roll number may only contain letters, digits and dashes')
+  .transform((v) => v.toUpperCase());
+
 const registerSchema = z.object({
   email: z.string().email().max(255),
   password: passwordSchema,
   name: z.string().min(1).max(100),
+  rollNumber: rollSchema.optional(),
 });
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+});
+const patchMeSchema = z.object({
+  rollNumber: rollSchema,
 });
 
 async function respondWithSession(res, user, status = 200) {
@@ -58,16 +70,23 @@ router.post(
   authLimiter,
   validate(registerSchema),
   asyncHandler(async (req, res) => {
-    const { email, password, name } = req.body;
+    const { email, password, name, rollNumber } = req.body;
     const exists = await writePool.query('SELECT 1 FROM users WHERE email = $1', [email]);
     if (exists.rowCount) throw Errors.conflict('Email already registered');
+    if (rollNumber) {
+      const rollTaken = await writePool.query(
+        'SELECT 1 FROM users WHERE UPPER(roll_number) = $1',
+        [rollNumber],
+      );
+      if (rollTaken.rowCount) throw Errors.conflict('Roll number already registered');
+    }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const { rows } = await writePool.query(
-      `INSERT INTO users (email, password_hash, name, role)
-       VALUES ($1, $2, $3, 'user')
-       RETURNING id, email, name, role, no_show_count`,
-      [email, passwordHash, name],
+      `INSERT INTO users (email, password_hash, name, role, roll_number)
+       VALUES ($1, $2, $3, 'user', $4)
+       RETURNING id, email, name, role, roll_number, no_show_count`,
+      [email, passwordHash, name, rollNumber || null],
     );
     await respondWithSession(res, rows[0], 201);
   }),
@@ -82,7 +101,7 @@ router.post(
     await assertNotLocked(email);
 
     const { rows } = await writePool.query(
-      'SELECT id, email, name, role, password_hash, no_show_count FROM users WHERE email = $1',
+      'SELECT id, email, name, role, roll_number, password_hash, no_show_count FROM users WHERE email = $1',
       [email],
     );
     // Hash even when the user doesn't exist so response time doesn't leak
@@ -124,11 +143,42 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const { rows } = await writePool.query(
-      'SELECT id, email, name, role, no_show_count FROM users WHERE id = $1',
+      'SELECT id, email, name, role, roll_number, no_show_count FROM users WHERE id = $1',
       [req.user.id],
     );
     if (!rows.length) throw Errors.unauthorized('User no longer exists');
     res.json({ user: publicUser(rows[0]) });
+  }),
+);
+
+// Set the roll number once (campus identity for the bus service). Returns a
+// fresh access token so the new roll claim is usable immediately.
+router.patch(
+  '/me',
+  requireAuth,
+  validate(patchMeSchema),
+  asyncHandler(async (req, res) => {
+    const { rollNumber } = req.body;
+
+    const { rows: me } = await writePool.query(
+      'SELECT id, email, name, role, roll_number, no_show_count FROM users WHERE id = $1',
+      [req.user.id],
+    );
+    if (!me.length) throw Errors.unauthorized('User no longer exists');
+    if (me[0].roll_number) throw Errors.conflict('Roll number is already set on this account');
+
+    const taken = await writePool.query(
+      'SELECT 1 FROM users WHERE UPPER(roll_number) = $1 AND id <> $2',
+      [rollNumber, req.user.id],
+    );
+    if (taken.rowCount) throw Errors.conflict('Roll number already registered');
+
+    const { rows } = await writePool.query(
+      `UPDATE users SET roll_number = $1 WHERE id = $2
+       RETURNING id, email, name, role, roll_number, no_show_count`,
+      [rollNumber, req.user.id],
+    );
+    res.json({ token: signAccessToken(rows[0]), user: publicUser(rows[0]) });
   }),
 );
 

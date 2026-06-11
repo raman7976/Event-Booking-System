@@ -26,12 +26,19 @@ export const publicUser = (u) => ({
   email: u.email,
   name: u.name,
   role: u.role,
+  rollNumber: u.roll_number || null,
   noShowCount: u.no_show_count,
 });
 
 export function signAccessToken(user) {
   return jwt.sign(
-    { sub: user.id, email: user.email, name: user.name, role: user.role },
+    {
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      roll: user.roll_number || null,
+    },
     config.jwt.secret,
     { expiresIn: config.jwt.accessTtl },
   );
@@ -86,7 +93,7 @@ export async function rotateRefreshToken(refreshJwt) {
   if (!stored) throw Errors.unauthorized('Refresh token revoked or already used');
 
   const { rows } = await writePool.query(
-    'SELECT id, email, name, role, no_show_count FROM users WHERE id = $1',
+    'SELECT id, email, name, role, roll_number, no_show_count FROM users WHERE id = $1',
     [payload.sub],
   );
   if (!rows.length) throw Errors.unauthorized('User no longer exists');
