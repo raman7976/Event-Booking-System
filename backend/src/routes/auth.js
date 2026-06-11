@@ -1,49 +1,54 @@
+// Auth endpoints.
+//   POST /register  -> create account (role 'user'), return access token + set refresh cookie
+//   POST /login     -> verify credentials (with lockout), same returns
+//   POST /refresh   -> rotate the refresh cookie, return a fresh access token
+//   POST /logout    -> revoke the refresh token + clear the cookie
+//   GET  /me        -> current user (fresh from DB)
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import crypto from 'node:crypto';
 import { z } from 'zod';
 import { writePool } from '../config/db.js';
-import { redis, isRedisReady } from '../config/redis.js';
-import { config } from '../config/env.js';
 import { validate } from '../middleware/validate.js';
+import { requireAuth } from '../middleware/auth.js';
 import { rateLimiter } from '../middleware/rateLimiter.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { Errors } from '../utils/errors.js';
+import {
+  publicUser,
+  signAccessToken,
+  issueRefreshToken,
+  rotateRefreshToken,
+  revokeRefreshToken,
+  assertNotLocked,
+  recordLoginFailure,
+  clearLoginFailures,
+  setRefreshCookie,
+  clearRefreshCookie,
+  REFRESH_COOKIE,
+} from '../services/authService.js';
 
 const router = Router();
 
+const passwordSchema = z
+  .string()
+  .min(8, 'password must be at least 8 characters')
+  .regex(/[A-Za-z]/, 'password must contain a letter')
+  .regex(/[0-9]/, 'password must contain a number');
+
 const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6, 'password must be at least 6 characters'),
-  name: z.string().min(1).max(100).optional(),
+  email: z.string().email().max(255),
+  password: passwordSchema,
+  name: z.string().min(1).max(100),
 });
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
 
-// Issue a JWT and cache a server-side session (session:{sid}).
-async function issueSession(user) {
-  const sid = crypto.randomUUID();
-  const token = jwt.sign(
-    { sub: user.id, email: user.email, name: user.name, sid },
-    config.jwt.secret,
-    { expiresIn: config.jwt.expiresIn },
-  );
-  if (isRedisReady()) {
-    try {
-      await redis.set(
-        `session:${sid}`,
-        JSON.stringify({ userId: user.id, email: user.email, name: user.name }),
-        'EX',
-        config.sessionTtlSeconds,
-      );
-    } catch {
-      /* session cache is best-effort */
-    }
-  }
-  return token;
+async function respondWithSession(res, user, status = 200) {
+  const token = signAccessToken(user);
+  setRefreshCookie(res, await issueRefreshToken(user));
+  res.status(status).json({ token, user: publicUser(user) });
 }
 
 const authLimiter = rateLimiter({ max: 20, windowSeconds: 60, keyPrefix: 'auth' });
@@ -59,14 +64,12 @@ router.post(
 
     const passwordHash = await bcrypt.hash(password, 10);
     const { rows } = await writePool.query(
-      `INSERT INTO users (email, password_hash, name)
-       VALUES ($1, $2, $3)
-       RETURNING id, email, name, no_show_count, created_at`,
-      [email, passwordHash, name || null],
+      `INSERT INTO users (email, password_hash, name, role)
+       VALUES ($1, $2, $3, 'user')
+       RETURNING id, email, name, role, no_show_count`,
+      [email, passwordHash, name],
     );
-    const user = rows[0];
-    const token = await issueSession(user);
-    res.status(201).json({ token, user });
+    await respondWithSession(res, rows[0], 201);
   }),
 );
 
@@ -76,19 +79,56 @@ router.post(
   validate(loginSchema),
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
+    await assertNotLocked(email);
+
     const { rows } = await writePool.query(
-      'SELECT id, email, name, password_hash, no_show_count, created_at FROM users WHERE email = $1',
+      'SELECT id, email, name, role, password_hash, no_show_count FROM users WHERE email = $1',
       [email],
     );
-    if (!rows.length) throw Errors.unauthorized('Invalid email or password');
+    // Hash even when the user doesn't exist so response time doesn't leak
+    // which emails are registered.
+    const hash = rows[0]?.password_hash || '$2a$10$invalidsaltinvalidsaltinvalidsa';
+    const match = await bcrypt.compare(password, hash);
+    if (!rows.length || !match) {
+      await recordLoginFailure(email);
+      throw Errors.unauthorized('Invalid email or password');
+    }
 
-    const user = rows[0];
-    const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) throw Errors.unauthorized('Invalid email or password');
+    await clearLoginFailures(email);
+    await respondWithSession(res, rows[0]);
+  }),
+);
 
-    delete user.password_hash;
-    const token = await issueSession(user);
-    res.json({ token, user });
+router.post(
+  '/refresh',
+  asyncHandler(async (req, res) => {
+    const refreshJwt = req.cookies?.[REFRESH_COOKIE];
+    if (!refreshJwt) throw Errors.unauthorized('No refresh token');
+    const user = await rotateRefreshToken(refreshJwt); // consumes the old jti
+    await respondWithSession(res, user);
+  }),
+);
+
+router.post(
+  '/logout',
+  asyncHandler(async (req, res) => {
+    const refreshJwt = req.cookies?.[REFRESH_COOKIE];
+    if (refreshJwt) await revokeRefreshToken(refreshJwt);
+    clearRefreshCookie(res);
+    res.json({ ok: true });
+  }),
+);
+
+router.get(
+  '/me',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { rows } = await writePool.query(
+      'SELECT id, email, name, role, no_show_count FROM users WHERE id = $1',
+      [req.user.id],
+    );
+    if (!rows.length) throw Errors.unauthorized('User no longer exists');
+    res.json({ user: publicUser(rows[0]) });
   }),
 );
 

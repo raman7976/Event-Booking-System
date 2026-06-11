@@ -2,6 +2,7 @@
 // "seat-updates" / "waitlist-notify" channels and fans messages out to its local
 // rooms — so a change made on ANY node reaches every connected client.
 import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import { subscriber } from './redis.js';
 import { config } from './env.js';
 import { logger } from '../utils/logger.js';
@@ -29,8 +30,17 @@ export function initSocket(httpServer) {
     });
 
     // Personal room for targeted notifications (e.g. waitlist seat available).
-    socket.on('identify', (userId) => {
-      if (userId) socket.join(`user:${userId}`);
+    // The client sends its access token; we verify it server-side rather than
+    // trusting a client-supplied user id.
+    socket.on('identify', (accessToken) => {
+      try {
+        const p = jwt.verify(accessToken, config.jwt.secret);
+        if (p.type === 'refresh') return; // wrong token kind
+        socket.join(`user:${p.sub}`);
+        logger.debug(`[ws] ${socket.id} identified as user:${p.sub}`);
+      } catch {
+        logger.debug(`[ws] ${socket.id} identify rejected (bad token)`);
+      }
     });
 
     socket.on('disconnect', () => logger.debug(`[ws] disconnect ${socket.id}`));

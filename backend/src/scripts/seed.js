@@ -68,19 +68,27 @@ async function seed() {
     await client.query('DELETE FROM seats');
     await client.query('DELETE FROM events');
 
-    // Demo user (demo@demo.local / password123)
-    const hash = await bcrypt.hash('password123', 10);
+    // Demo accounts:
+    //   user  -> demo@demo.local  / password123
+    //   admin -> admin@demo.local / Admin@1234
+    const userHash = await bcrypt.hash('password123', 10);
+    const adminHash = await bcrypt.hash('Admin@1234', 10);
     await client.query(
-      `INSERT INTO users (email, password_hash, name) VALUES ('demo@demo.local', $1, 'Demo User')
-       ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash`,
-      [hash],
+      `INSERT INTO users (email, password_hash, name, role)
+       VALUES ('demo@demo.local', $1, 'Demo User', 'user'),
+              ('admin@demo.local', $2, 'Admin', 'admin')
+       ON CONFLICT (email) DO UPDATE
+         SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role`,
+      [userHash, adminHash],
     );
 
     const created = [];
     for (const ev of EVENTS) created.push(await createEvent(client, ev));
 
     await client.query('COMMIT');
-    console.log('[seed] done. Demo login: demo@demo.local / password123');
+    console.log('[seed] done.');
+    console.log('  user : demo@demo.local  / password123');
+    console.log('  admin: admin@demo.local / Admin@1234');
     created.forEach((c) => console.log(`  • ${c.name} — ${c.seats} seats (id ${c.id})`));
   } catch (err) {
     await client.query('ROLLBACK');

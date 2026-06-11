@@ -19,8 +19,11 @@ export const config = {
 
   jwt: {
     secret: process.env.JWT_SECRET || 'dev_super_secret_change_me_in_production',
-    expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+    accessTtl: process.env.ACCESS_TOKEN_TTL || '15m',
+    refreshTtlDays: int(process.env.REFRESH_TOKEN_TTL_DAYS, 7),
   },
+  // Set COOKIE_SECURE=true when serving over HTTPS (refresh cookie gets Secure).
+  cookieSecure: process.env.COOKIE_SECURE === 'true',
 
   pg: {
     primaryHost: process.env.PG_PRIMARY_HOST || 'localhost',

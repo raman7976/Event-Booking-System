@@ -2,6 +2,7 @@
 // the Socket.io server is attached in the real-time section.
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import http from 'node:http';
 import { config } from './config/env.js';
 import { logger } from './utils/logger.js';
@@ -15,6 +16,7 @@ const app = express();
 app.set('trust proxy', true); // honor X-Forwarded-* from nginx
 app.use(cors({ origin: config.clientUrls, credentials: true }));
 app.use(express.json());
+app.use(cookieParser()); // refresh-token cookie on /api/auth/*
 // Surface which instance served the request (handy for verifying load balancing).
 app.use((_req, res, next) => {
   res.setHeader('X-Served-By', config.instanceId);

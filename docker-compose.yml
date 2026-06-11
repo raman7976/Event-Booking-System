@@ -12,7 +12,9 @@ x-app-env: &app-env
   NODE_ENV: production
   CLIENT_URL: ${CLIENT_URL:-http://localhost:5173}
   JWT_SECRET: ${JWT_SECRET:-dev_super_secret_change_me_in_production}
-  JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+  ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+  REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+  COOKIE_SECURE: ${COOKIE_SECURE:-false}
   PG_PRIMARY_HOST: postgres_primary
   PG_PRIMARY_PORT: 5432
   PG_REPLICA_HOST: postgres_replica
