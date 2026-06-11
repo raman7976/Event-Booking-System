@@ -51,7 +51,7 @@ export default function RegisterPage() {
     <AuthLayout title="Create your account" subtitle="Browse free — sign up to hold & book seats.">
       <form onSubmit={submit} className="space-y-4">
         <div>
-          <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-slate-300">Name</label>
+          <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-slate-700">Name</label>
           <input
             id="name" required maxLength={100} value={name}
             onChange={(e) => setName(e.target.value)} autoComplete="name"
@@ -59,7 +59,7 @@ export default function RegisterPage() {
           />
         </div>
         <div>
-          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-300">Email</label>
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
           <input
             id="email" type="email" required value={email}
             onChange={(e) => setEmail(e.target.value)} autoComplete="email"
@@ -67,7 +67,7 @@ export default function RegisterPage() {
           />
         </div>
         <div>
-          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-300">Password</label>
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
           <PasswordInput id="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" placeholder="Create a strong password" />
           {password && (
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -75,7 +75,7 @@ export default function RegisterPage() {
                 <span
                   key={label}
                   className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition-colors ${
-                    ok ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/5 text-slate-500'
+                    ok ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
                   }`}
                 >
                   {ok ? '✓' : '○'} {label}
@@ -85,15 +85,15 @@ export default function RegisterPage() {
           )}
         </div>
         <div>
-          <label htmlFor="confirm" className="mb-1.5 block text-sm font-medium text-slate-300">Confirm password</label>
+          <label htmlFor="confirm" className="mb-1.5 block text-sm font-medium text-slate-700">Confirm password</label>
           <PasswordInput id="confirm" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" placeholder="Repeat it" />
-          {mismatch && <p className="mt-1.5 text-xs text-amber-300">Passwords don&apos;t match.</p>}
+          {mismatch && <p className="mt-1.5 text-xs text-amber-600">Passwords don&apos;t match.</p>}
         </div>
 
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} role="alert"
-            className="rounded-xl border border-rose-500/30 bg-rose-950/50 px-3 py-2 text-sm text-rose-200"
+            className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
           >
             {error}
             {fieldErrors && (
@@ -111,8 +111,8 @@ export default function RegisterPage() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-400">
-        Already registered? <Link to="/login" className="font-medium text-violet-300 hover:underline">Sign in</Link>
+      <p className="mt-6 text-center text-sm text-slate-500">
+        Already registered? <Link to="/login" className="font-medium text-violet-700 hover:underline">Sign in</Link>
       </p>
     </AuthLayout>
   );

@@ -31,7 +31,7 @@ export default function ProgressRing({ expiresAt, totalSeconds = 480, size = 52,
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(15,23,42,0.08)" strokeWidth="4" />
         <circle
           cx={size / 2} cy={size / 2} r={r} fill="none"
           stroke={stroke} strokeWidth="4" strokeLinecap="round"

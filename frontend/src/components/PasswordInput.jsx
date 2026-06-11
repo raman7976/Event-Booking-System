@@ -19,7 +19,7 @@ export default function PasswordInput({ id, value, onChange, placeholder = '•�
         type="button"
         onClick={() => setShow((s) => !s)}
         aria-label={show ? 'Hide password' : 'Show password'}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 transition hover:text-slate-200"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 transition hover:text-slate-700"
       >
         {show ? '🙈' : '👁'}
       </button>

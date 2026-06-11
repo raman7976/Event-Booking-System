@@ -4,14 +4,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Design tokens ─────────────────────────────────────────────── */
+/* ─── Design tokens (light, professional) ───────────────────────── */
 :root {
-  --bg: #07070d;
-  --surface: rgba(255, 255, 255, 0.04);
-  --border: rgba(255, 255, 255, 0.08);
-  --brand-a: #8b5cf6; /* violet  */
-  --brand-b: #d946ef; /* fuchsia */
-  --brand-c: #22d3ee; /* cyan    */
+  --bg: #f8fafc;
+  --ink: #0f172a;
+  --brand-a: #7c3aed; /* violet  */
+  --brand-b: #c026d3; /* fuchsia */
+  --brand-c: #0891b2; /* cyan    */
 }
 
 html {
@@ -22,24 +21,23 @@ body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--bg);
-  color: #e4e4ef;
+  color: #334155;
   overflow-x: clip; /* full-bleed sections can't cause sideways scroll */
   background-image:
-    radial-gradient(900px 500px at 85% -10%, rgba(139, 92, 246, 0.14), transparent 60%),
-    radial-gradient(700px 420px at -10% 25%, rgba(217, 70, 239, 0.08), transparent 60%),
-    radial-gradient(600px 400px at 50% 110%, rgba(34, 211, 238, 0.06), transparent 60%);
+    radial-gradient(900px 480px at 90% -10%, rgba(124, 58, 237, 0.05), transparent 60%),
+    radial-gradient(700px 420px at -10% 30%, rgba(192, 38, 211, 0.04), transparent 60%);
   background-attachment: fixed;
 }
 
 ::selection {
-  background: rgba(139, 92, 246, 0.45);
+  background: rgba(124, 58, 237, 0.18);
 }
 
-/* slim, dark scrollbar */
+/* slim scrollbar */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.22); }
+::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, 0.16); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(15, 23, 42, 0.28); }
 
 /* ─── Reusable surfaces & controls ──────────────────────────────── */
 @layer components {
@@ -49,37 +47,42 @@ body {
     margin-left: calc(50% - 50vw);
   }
 
+  /* Soft elevated surface — hairline only, no heavy card borders. */
   .glass {
-    @apply rounded-2xl border;
-    background: var(--surface);
-    border-color: var(--border);
-    backdrop-filter: blur(14px);
+    @apply rounded-3xl bg-white;
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    box-shadow: 0 14px 44px -22px rgba(15, 23, 42, 0.16);
   }
 
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(100deg, #c4b5fd 0%, var(--brand-a) 35%, var(--brand-b) 70%, var(--brand-c) 110%);
+    background-image: linear-gradient(100deg, var(--brand-a) 0%, var(--brand-b) 55%, var(--brand-c) 115%);
   }
 
   .btn-primary {
     @apply relative inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-transform duration-200;
     background-image: linear-gradient(110deg, var(--brand-a), var(--brand-b));
-    box-shadow: 0 8px 28px -8px rgba(139, 92, 246, 0.55);
+    box-shadow: 0 10px 26px -10px rgba(124, 58, 237, 0.55);
   }
-  .btn-primary:hover { transform: translateY(-1px) scale(1.015); box-shadow: 0 12px 36px -8px rgba(217, 70, 239, 0.55); }
+  .btn-primary:hover { transform: translateY(-1px) scale(1.015); box-shadow: 0 14px 32px -10px rgba(192, 38, 211, 0.5); }
   .btn-primary:active { transform: translateY(0) scale(0.99); }
   .btn-primary:disabled { @apply cursor-not-allowed opacity-50; transform: none; }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:border-white/25 hover:bg-white/10;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50;
   }
 
   .input-field {
-    @apply w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-white/[0.07] focus:ring-2 focus:ring-violet-500/25;
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 text-[11px] font-semibold tracking-wide backdrop-blur;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-slate-600 backdrop-blur;
+  }
+
+  /* For chips sitting on photography. */
+  .chip-onmedia {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/45 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-white backdrop-blur;
   }
 }
 
@@ -97,8 +100,8 @@ body {
   100% { background-position: 600px 0; }
 }
 @keyframes seat-flash {
-  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.85); opacity: 1; }
-  100% { box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); opacity: 0; }
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.75); opacity: 1; }
+  100% { box-shadow: 0 0 0 14px rgba(124, 58, 237, 0); opacity: 0; }
 }
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
@@ -108,6 +111,7 @@ body {
   from { transform: scale(1); }
   to { transform: scale(1.12); }
 }
+
 .animate-float-slow { animation: float-slow 14s ease-in-out infinite; }
 .animate-float-slower { animation: float-slower 18s ease-in-out infinite; }
 .animate-pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
@@ -122,7 +126,7 @@ body {
 }
 
 .skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 75%);
+  background: linear-gradient(90deg, rgba(15,23,42,0.05) 25%, rgba(15,23,42,0.10) 50%, rgba(15,23,42,0.05) 75%);
   background-size: 600px 100%;
   animation: shimmer 1.4s linear infinite;
 }

@@ -12,11 +12,12 @@ const STATUS_COLORS = { available: '#34d399', held: '#fbbf24', booked: '#fb7185'
 const PIE_COLORS = ['#8b5cf6', '#d946ef', '#22d3ee', '#34d399', '#fbbf24'];
 
 const tooltipStyle = {
-  background: 'rgba(16,16,26,0.95)',
-  border: '1px solid rgba(255,255,255,0.1)',
+  background: '#ffffff',
+  border: '1px solid rgba(15,23,42,0.08)',
   borderRadius: 12,
-  color: '#e4e4ef',
+  color: '#0f172a',
   fontSize: 12,
+  boxShadow: '0 10px 30px -12px rgba(15,23,42,0.25)',
 };
 
 function Stat({ label, value, prefix = '', suffix = '', delay = 0 }) {
@@ -26,8 +27,8 @@ function Stat({ label, value, prefix = '', suffix = '', delay = 0 }) {
       initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
       className="glass p-5"
     >
-      <div className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</div>
-      <div className="mt-1 font-display text-3xl font-extrabold">
+      <div className="text-xs font-medium uppercase tracking-wider text-slate-400">{label}</div>
+      <div className="mt-1 font-display text-3xl font-extrabold text-slate-900">
         {prefix}{n.toLocaleString()}{suffix}
       </div>
     </motion.div>
@@ -40,7 +41,7 @@ function Card({ title, children, wide, delay = 0 }) {
       initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
       transition={{ delay }} className={`glass p-5 ${wide ? 'lg:col-span-2' : ''}`}
     >
-      <h2 className="mb-4 font-display font-bold">{title}</h2>
+      <h2 className="mb-4 font-display font-bold text-slate-900">{title}</h2>
       {children}
     </motion.div>
   );
@@ -62,7 +63,7 @@ export default function DashboardPage() {
       </div>
     );
   }
-  if (error) return <p className="text-rose-400">Failed to load analytics (admin only).</p>;
+  if (error) return <p className="text-rose-600">Failed to load analytics (admin only).</p>;
 
   const statusData = data.seatsByStatus.map((s) => ({ name: s.status, value: s.count }));
   const revData = data.revenueByCategory.map((c) => ({ name: c.category, revenue: c.revenue, booked: c.booked }));
@@ -74,12 +75,12 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-extrabold sm:text-3xl">
+        <h1 className="font-display text-2xl font-extrabold text-slate-900 sm:text-3xl">
           {data.event.name} — <span className="text-gradient">analytics</span>
         </h1>
         <div className="flex items-center gap-2">
-          <span className="chip text-cyan-300">
-            <span className="h-2 w-2 animate-pulse-dot rounded-full bg-cyan-400" />
+          <span className="chip !text-cyan-700">
+            <span className="h-2 w-2 animate-pulse-dot rounded-full bg-cyan-500" />
             auto-refresh 5s
           </span>
           <Link to={`/events/${id}`} className="btn-ghost !py-1.5 text-xs">Seat map →</Link>
@@ -97,10 +98,10 @@ export default function DashboardPage() {
         <Card title="Seats by status">
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={statusData} barCategoryGap="28%">
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.07)" vertical={false} />
               <XAxis dataKey="name" stroke="#64748b" tickLine={false} axisLine={false} />
               <YAxis allowDecimals={false} stroke="#64748b" tickLine={false} axisLine={false} />
-              <Tooltip cursor={{ fill: 'rgba(255,255,255,0.04)' }} contentStyle={tooltipStyle} />
+              <Tooltip cursor={{ fill: 'rgba(15,23,42,0.04)' }} contentStyle={tooltipStyle} />
               <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                 {statusData.map((d) => <Cell key={d.name} fill={STATUS_COLORS[d.name] || '#64748b'} />)}
               </Bar>
@@ -132,7 +133,7 @@ export default function DashboardPage() {
                   <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.07)" vertical={false} />
               <XAxis dataKey="time" stroke="#64748b" tickLine={false} axisLine={false} />
               <YAxis allowDecimals={false} stroke="#64748b" tickLine={false} axisLine={false} />
               <Tooltip contentStyle={tooltipStyle} />

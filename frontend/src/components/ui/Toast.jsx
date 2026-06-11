@@ -6,10 +6,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 const ToastCtx = createContext(null);
 
 const STYLES = {
-  success: { ring: 'ring-emerald-400/30', icon: '✓', iconBg: 'bg-emerald-500/20 text-emerald-300' },
-  error: { ring: 'ring-rose-400/30', icon: '✕', iconBg: 'bg-rose-500/20 text-rose-300' },
-  info: { ring: 'ring-violet-400/30', icon: 'ℹ', iconBg: 'bg-violet-500/20 text-violet-300' },
-  live: { ring: 'ring-cyan-400/30', icon: '⚡', iconBg: 'bg-cyan-500/20 text-cyan-300' },
+  success: { ring: 'ring-emerald-200', icon: '✓', iconBg: 'bg-emerald-100 text-emerald-700' },
+  error: { ring: 'ring-rose-200', icon: '✕', iconBg: 'bg-rose-100 text-rose-700' },
+  info: { ring: 'ring-violet-200', icon: 'ℹ', iconBg: 'bg-violet-100 text-violet-700' },
+  live: { ring: 'ring-cyan-200', icon: '⚡', iconBg: 'bg-cyan-100 text-cyan-700' },
 };
 
 export function ToastProvider({ children }) {
@@ -41,16 +41,16 @@ export function ToastProvider({ children }) {
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 80, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                className={`pointer-events-auto flex items-start gap-3 rounded-xl border border-white/10 bg-[#14141f]/95 p-3 shadow-card ring-1 backdrop-blur ${s.ring}`}
+                className={`pointer-events-auto flex items-start gap-3 rounded-xl bg-white p-3 shadow-card ring-1 ${s.ring}`}
               >
                 <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${s.iconBg}`}>
                   {s.icon}
                 </span>
-                <p className="flex-1 text-sm leading-snug text-slate-200">{t.message}</p>
+                <p className="flex-1 text-sm leading-snug text-slate-700">{t.message}</p>
                 <button
                   type="button"
                   onClick={() => dismiss(t.id)}
-                  className="text-slate-500 transition hover:text-slate-200"
+                  className="text-slate-400 transition hover:text-slate-700"
                   aria-label="Dismiss"
                 >
                   ✕

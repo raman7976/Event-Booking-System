@@ -8,7 +8,6 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
-        ink: '#07070d',
         seat: {
           available: '#22c55e',
           held: '#eab308',
@@ -18,9 +17,9 @@ export default {
         },
       },
       boxShadow: {
-        glow: '0 0 24px -4px rgba(139, 92, 246, 0.55)',
-        'glow-sm': '0 0 14px -2px rgba(139, 92, 246, 0.45)',
-        card: '0 18px 50px -22px rgba(0, 0, 0, 0.85)',
+        glow: '0 0 24px -4px rgba(124, 58, 237, 0.45)',
+        'glow-sm': '0 0 14px -2px rgba(124, 58, 237, 0.35)',
+        card: '0 16px 44px -24px rgba(15, 23, 42, 0.22)',
       },
     },
   },

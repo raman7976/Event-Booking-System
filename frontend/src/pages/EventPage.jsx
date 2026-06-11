@@ -160,7 +160,7 @@ export default function EventPage() {
         initial={{ opacity: 0, scale: 0.985 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.45, ease: 'easeOut' }}
-        className="relative h-60 overflow-hidden rounded-3xl border border-white/10 sm:h-72"
+        className="relative h-60 overflow-hidden rounded-3xl shadow-card sm:h-72"
       >
         {media && (
           <>
@@ -173,29 +173,34 @@ export default function EventPage() {
             />
           </>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#07070d] via-[#07070d]/45 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 p-6 sm:p-8">
           <div>
-            <Link to="/" className="text-xs font-medium text-slate-300/80 transition hover:text-white">
+            <Link to="/" className="text-xs font-medium text-white/75 transition hover:text-white">
               ← All events
             </Link>
-            <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight drop-shadow sm:text-4xl">
+            <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-white drop-shadow sm:text-4xl">
               {event?.name || '…'}
             </h1>
             {event && (
-              <p className="mt-1 text-sm text-slate-300">
+              <p className="mt-1 text-sm text-slate-200">
                 📍 {event.venue} · 🗓 {new Date(event.event_date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
               </p>
             )}
           </div>
           <div className="flex items-center gap-2">
             {event && (
-              <span className="chip text-emerald-300">
+              <span className="chip-onmedia !text-emerald-200">
                 {event.available_seats} seats left
               </span>
             )}
             {isAdmin && (
-              <Link to={`/events/${id}/dashboard`} className="btn-ghost !py-2 text-xs">📊 Dashboard</Link>
+              <Link
+                to={`/events/${id}/dashboard`}
+                className="rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-xs font-medium text-white backdrop-blur transition hover:bg-white/20"
+              >
+                📊 Dashboard
+              </Link>
             )}
           </div>
         </div>
@@ -207,8 +212,8 @@ export default function EventPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className={`relative overflow-hidden rounded-2xl border bg-white/[0.03] p-5 backdrop-blur transition-colors ${
-          recBusy ? 'border-fuchsia-400/50' : 'border-white/10'
+        className={`relative overflow-hidden rounded-2xl bg-white p-5 shadow-card transition-shadow ${
+          recBusy ? 'ring-2 ring-fuchsia-300/70' : ''
         }`}
       >
         {recBusy && (
@@ -220,16 +225,16 @@ export default function EventPage() {
         )}
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/30 to-fuchsia-600/30 text-lg">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-lg">
               ✨
             </span>
             <div>
-              <div className="font-display text-sm font-bold">Smart seat finder</div>
-              <div className="text-xs text-slate-400">Gemini-powered, with a heuristic fallback</div>
+              <div className="font-display text-sm font-bold text-slate-900">Smart seat finder</div>
+              <div className="text-xs text-slate-500">Gemini-powered, with a heuristic fallback</div>
             </div>
           </div>
 
-          <label className="text-xs text-slate-400">
+          <label className="text-xs text-slate-500">
             Group
             <input
               type="number" min="1" max="20" value={groupSize}
@@ -237,7 +242,7 @@ export default function EventPage() {
               className="input-field mt-1 !w-20 !py-1.5"
             />
           </label>
-          <label className="text-xs text-slate-400">
+          <label className="text-xs text-slate-500">
             Budget ($)
             <input
               type="number" min="0" value={budget} placeholder="any"
@@ -255,7 +260,7 @@ export default function EventPage() {
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                   prefs.has(p)
                     ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-glow-sm scale-105'
-                    : 'border border-white/10 bg-white/5 text-slate-400 hover:text-slate-200'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                 }`}
               >
                 {icon} {p}
@@ -276,10 +281,10 @@ export default function EventPage() {
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden"
             >
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-400/20 bg-violet-950/40 p-4">
-                <div className="flex-1 text-sm text-violet-100">
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-100 bg-violet-50 p-4">
+                <div className="flex-1 text-sm text-violet-950">
                   <span className="mr-2">💡</span>{rec.reason}
-                  <span className="ml-2 rounded-full border border-white/10 bg-black/30 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-400">
+                  <span className="ml-2 rounded-full border border-violet-200 bg-white px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-500">
                     {rec.source}{rec.model ? ` · ${rec.model}` : ''}
                   </span>
                 </div>
@@ -308,7 +313,7 @@ export default function EventPage() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <SeatLegend />
           {myHoldCount > 0 && (
-            <span className="chip border-blue-400/30 text-blue-200">
+            <span className="chip !border-blue-200 !bg-blue-50 !text-blue-700">
               {myHoldCount} seat{myHoldCount > 1 ? 's' : ''} on hold — click to pay
             </span>
           )}
@@ -322,7 +327,7 @@ export default function EventPage() {
         )}
         {authStatus !== 'authed' && !isLoading && (
           <p className="mt-6 text-center text-sm text-slate-500">
-            👀 You&apos;re browsing live data — <Link to="/login" state={{ from: location }} className="text-violet-300 underline">sign in</Link> to grab a seat.
+            👀 You&apos;re browsing live data — <Link to="/login" state={{ from: location }} className="font-medium text-violet-700 underline">sign in</Link> to grab a seat.
           </p>
         )}
       </motion.section>

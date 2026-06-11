@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Routes, Route, Link, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from './hooks/useAuth.js';
@@ -14,7 +15,7 @@ import MyBookingsPage from './pages/MyBookingsPage.jsx';
 function PageSpinner() {
   return (
     <div className="flex justify-center py-24">
-      <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-violet-500/25 border-t-violet-400" />
+      <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-violet-200 border-t-violet-600" />
     </div>
   );
 }
@@ -36,8 +37,8 @@ function RequireAdmin({ children }) {
     return (
       <div className="glass mx-auto mt-16 max-w-md p-10 text-center">
         <div className="text-4xl">🚫</div>
-        <h1 className="mt-3 font-display text-xl font-bold">Admins only</h1>
-        <p className="mt-1 text-sm text-slate-400">Your account doesn&apos;t have access to this page.</p>
+        <h1 className="mt-3 font-display text-xl font-bold text-slate-900">Admins only</h1>
+        <p className="mt-1 text-sm text-slate-500">Your account doesn&apos;t have access to this page.</p>
         <Link to="/" className="btn-ghost mt-5">Back to events</Link>
       </div>
     );
@@ -45,9 +46,28 @@ function RequireAdmin({ children }) {
   return children;
 }
 
+function useScrolled(threshold = 24) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > threshold);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [threshold]);
+  return scrolled;
+}
+
+/**
+ * Submerged navbar: fixed, fully transparent while sitting on the home hero
+ * photo, then frosted white with a hairline once you scroll (and on every
+ * other page). No pill, no box — it belongs to the page behind it.
+ */
 function Header() {
   const { user, status, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const scrolled = useScrolled();
+  const onMedia = pathname === '/' && !scrolled; // transparent over the hero
 
   const links = [
     { to: '/', label: 'Events', show: true, end: true },
@@ -55,69 +75,90 @@ function Header() {
     { to: '/admin', label: 'Admin', show: isAdmin },
   ].filter((l) => l.show);
 
+  const linkClass = ({ isActive }) =>
+    `border-b-2 pb-0.5 text-[12px] font-semibold uppercase tracking-[0.16em] transition-colors ${
+      onMedia
+        ? isActive
+          ? 'border-white text-white'
+          : 'border-transparent text-white/75 hover:text-white'
+        : isActive
+          ? 'border-violet-600 text-slate-900'
+          : 'border-transparent text-slate-500 hover:text-slate-900'
+    }`;
+
   const doLogout = async () => {
     await logout();
     navigate('/login');
   };
 
   return (
-    <header className="sticky top-0 z-40 px-3 pt-3">
-      <div className="glass mx-auto flex max-w-6xl items-center justify-between gap-3 !rounded-2xl px-4 py-2.5">
-        <div className="flex items-center gap-5">
-          <Link to="/" className="group flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-sm shadow-glow-sm transition-transform group-hover:rotate-6">
-              🎟️
-            </span>
-            <span className="font-display text-lg font-bold tracking-tight">
-              Seat<span className="text-gradient">Live</span>
-            </span>
-          </Link>
+    <header
+      className={`fixed inset-x-0 top-0 z-40 transition-all duration-300 ${
+        onMedia
+          ? 'bg-transparent'
+          : 'bg-white/85 shadow-[0_1px_0_rgba(15,23,42,0.06)] backdrop-blur-md'
+      }`}
+    >
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
+        <Link to="/" className="group flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-sm shadow-glow-sm transition-transform group-hover:rotate-6">
+            🎟️
+          </span>
+          <span className={`font-display text-lg font-bold tracking-tight ${onMedia ? 'text-white' : 'text-slate-900'}`}>
+            Seat<span className="text-gradient">Live</span>
+          </span>
+        </Link>
 
-          <nav className="hidden items-center gap-1 sm:flex">
-            {links.map((l) => (
-              <NavLink key={l.to} to={l.to} end={l.end} className="relative rounded-lg px-3 py-1.5 text-sm font-medium">
-                {({ isActive }) => (
-                  <>
-                    {isActive && (
-                      <motion.span
-                        layoutId="nav-pill"
-                        className="absolute inset-0 rounded-lg bg-white/10 ring-1 ring-white/15"
-                        transition={{ type: 'spring', stiffness: 480, damping: 36 }}
-                      />
-                    )}
-                    <span className={`relative ${isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}>
-                      {l.label}
-                    </span>
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </nav>
-        </div>
+        <nav className="hidden items-center gap-7 sm:flex">
+          {links.map((l) => (
+            <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}>
+              {l.label}
+            </NavLink>
+          ))}
+        </nav>
 
         <div className="flex items-center gap-2.5 text-sm">
           {status === 'authed' ? (
             <>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-500/60 to-fuchsia-600/60 font-display text-xs font-bold uppercase">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 font-display text-xs font-bold uppercase text-white">
                 {user.name?.[0] || '?'}
               </span>
-              <span className="hidden text-slate-300 md:inline">{user.name}</span>
+              <span className={`hidden md:inline ${onMedia ? 'text-white/90' : 'text-slate-700'}`}>{user.name}</span>
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                   isAdmin
-                    ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-glow-sm'
-                    : 'border border-white/10 bg-white/5 text-slate-300'
+                    ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white'
+                    : onMedia
+                      ? 'border border-white/30 bg-white/10 text-white'
+                      : 'border border-slate-200 bg-white text-slate-600'
                 }`}
               >
                 {user.role}
               </span>
-              <button type="button" onClick={doLogout} className="btn-ghost !px-3 !py-1.5">
+              <button
+                type="button"
+                onClick={doLogout}
+                className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+                  onMedia
+                    ? 'border border-white/25 bg-white/10 text-white hover:bg-white/20'
+                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
                 Logout
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="btn-ghost !px-3.5 !py-1.5">Sign in</Link>
+              <Link
+                to="/login"
+                className={`rounded-xl px-3.5 py-1.5 text-sm font-medium transition ${
+                  onMedia
+                    ? 'border border-white/25 bg-white/10 text-white hover:bg-white/20'
+                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                Sign in
+              </Link>
               <Link to="/register" className="btn-primary !px-4 !py-1.5">Sign up</Link>
             </>
           )}
@@ -129,9 +170,9 @@ function Header() {
 
 function Footer() {
   return (
-    <footer className="mt-20 border-t border-white/5 py-8">
+    <footer className="mt-20 border-t border-slate-200 py-8">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 text-xs text-slate-500">
-        <span className="font-display font-semibold text-slate-400">
+        <span className="font-display font-semibold text-slate-600">
           🎟️ SeatLive — real-time seat booking
         </span>
         <span>
@@ -144,11 +185,14 @@ function Footer() {
 
 export default function App() {
   const location = useLocation();
+  const isHome = location.pathname === '/';
   return (
     <ToastProvider>
       <div className="flex min-h-screen flex-col">
         <Header />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+        {/* Home starts at the very top so the hero photo runs underneath the
+            transparent navbar; every other page clears the fixed header. */}
+        <main className={`mx-auto w-full max-w-6xl flex-1 px-4 pb-8 ${isHome ? 'pt-0' : 'pt-24'}`}>
           {/* Enter-only page transition. Deliberately NOT AnimatePresence
               mode="wait": exit phases freeze the outgoing tree, and a frozen
               guard rendering <Navigate> re-fires into the router forever. */}

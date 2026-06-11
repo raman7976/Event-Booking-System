@@ -9,7 +9,7 @@ const PERKS = [
 
 export default function AuthLayout({ title, subtitle, children }) {
   return (
-    <div className="mx-auto mt-4 grid max-w-4xl overflow-hidden rounded-3xl border border-white/10 shadow-card lg:grid-cols-2">
+    <div className="mx-auto mt-4 grid max-w-4xl overflow-hidden rounded-3xl shadow-card lg:grid-cols-2">
       {/* brand panel */}
       <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-violet-950 via-[#14102a] to-fuchsia-950/70 p-10 lg:flex">
         <div className="animate-float-slow absolute -right-12 top-10 h-56 w-56 rounded-full bg-fuchsia-600/25 blur-3xl" aria-hidden="true" />
@@ -44,10 +44,10 @@ export default function AuthLayout({ title, subtitle, children }) {
       </div>
 
       {/* form panel */}
-      <div className="bg-[#0d0d16] p-8 sm:p-10">
+      <div className="bg-white p-8 sm:p-10">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <h1 className="font-display text-2xl font-bold">{title}</h1>
-          <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
+          <h1 className="font-display text-2xl font-bold text-slate-900">{title}</h1>
+          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
           <div className="mt-7">{children}</div>
         </motion.div>
       </div>

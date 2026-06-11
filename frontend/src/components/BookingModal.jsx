@@ -30,7 +30,7 @@ export default function BookingModal({ seat, hold, onConfirm, onCancel, busy, er
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
       onClick={onCancel}
     >
       <motion.div
@@ -38,22 +38,22 @@ export default function BookingModal({ seat, hold, onConfirm, onCancel, busy, er
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 30, scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-        className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-[#101019] shadow-card"
+        className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-card"
         onClick={(e) => e.stopPropagation()}
       >
         {/* header */}
-        <div className="flex items-center justify-between border-b border-white/5 bg-white/[0.03] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-6 py-4">
           <div>
-            <h2 className="font-display text-lg font-bold">Complete your booking</h2>
-            <p className="text-xs text-slate-400">
-              Seat <b className="text-slate-200">{seat.row}{seat.number}</b> · {seat.category}
+            <h2 className="font-display text-lg font-bold text-slate-900">Complete your booking</h2>
+            <p className="text-xs text-slate-500">
+              Seat <b className="text-slate-800">{seat.row}{seat.number}</b> · {seat.category}
             </p>
           </div>
           <div className="flex items-center gap-3">
             {hold?.expiresAt && (
               <ProgressRing expiresAt={hold.expiresAt} totalSeconds={hold.ttl || 480} size={48} />
             )}
-            <button type="button" onClick={onCancel} aria-label="Close" className="text-slate-500 transition hover:rotate-90 hover:text-white">
+            <button type="button" onClick={onCancel} aria-label="Close" className="text-slate-400 transition hover:rotate-90 hover:text-slate-800">
               ✕
             </button>
           </div>
@@ -102,7 +102,7 @@ export default function BookingModal({ seat, hold, onConfirm, onCancel, busy, er
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
                 role="alert"
-                className="rounded-xl border border-rose-500/30 bg-rose-950/50 px-3 py-2 text-sm text-rose-200"
+                className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
               >
                 {error}
               </motion.div>
@@ -118,7 +118,7 @@ export default function BookingModal({ seat, hold, onConfirm, onCancel, busy, er
                 <>🔒 Pay ${seat.price}</>
               )}
             </button>
-            <p className="text-center text-[11px] text-slate-500">
+            <p className="text-center text-[11px] text-slate-400">
               Demo checkout — no real payment is processed. Hold auto-releases if you don&apos;t finish in time.
             </p>
           </form>

@@ -3,7 +3,7 @@
 // one-shot white flash whenever a seat changes state over the WebSocket.
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import CountdownTimer from './CountdownTimer.jsx';
+import CountdownTimer, { DARK_SURFACE_TONES } from './CountdownTimer.jsx';
 
 const SEAT_STYLE = {
   available:
@@ -11,8 +11,8 @@ const SEAT_STYLE = {
   heldOthers: 'bg-gradient-to-b from-amber-400/80 to-amber-600/80 text-amber-950 cursor-not-allowed',
   mine:
     'bg-gradient-to-b from-blue-400 to-violet-600 text-white ring-2 ring-blue-300/60 shadow-[0_0_18px_-2px_rgba(96,165,250,0.8)] cursor-pointer',
-  booked: 'bg-gradient-to-b from-rose-500/70 to-rose-800/70 text-rose-100/70 cursor-not-allowed',
-  disabled: 'bg-slate-700/60 text-slate-400 cursor-not-allowed',
+  booked: 'bg-gradient-to-b from-rose-500/80 to-rose-700/80 text-rose-50 cursor-not-allowed',
+  disabled: 'bg-slate-300 text-slate-500 cursor-not-allowed',
 };
 
 function seatVariant(seat) {
@@ -35,10 +35,10 @@ function Stage() {
         </defs>
         <path d="M30,58 Q300,-26 570,58" fill="none" stroke="url(#stage-g)" strokeWidth="3" strokeLinecap="round" />
       </svg>
-      <span className="absolute inset-x-0 -bottom-1 text-center text-[10px] font-semibold uppercase tracking-[0.5em] text-slate-500">
+      <span className="absolute inset-x-0 -bottom-1 text-center text-[10px] font-semibold uppercase tracking-[0.5em] text-slate-400">
         Stage
       </span>
-      <div className="absolute inset-x-1/4 top-3 h-8 rounded-[100%] bg-fuchsia-500/15 blur-2xl" aria-hidden="true" />
+      <div className="absolute inset-x-1/4 top-3 h-8 rounded-[100%] bg-fuchsia-400/20 blur-2xl" aria-hidden="true" />
     </div>
   );
 }
@@ -67,7 +67,7 @@ export default function SeatMap({ seats = [], onSeatClick, holdsBySeat = {}, onH
             transition={{ delay: 0.06 * rowIdx, duration: 0.45, ease: 'easeOut' }}
             className="flex items-center justify-center gap-2"
           >
-            <span className="w-6 text-right font-display text-xs font-semibold text-slate-500">{row}</span>
+            <span className="w-6 text-right font-display text-xs font-semibold text-slate-400">{row}</span>
             <div className="flex flex-wrap justify-center gap-1.5">
               {list.map((seat) => {
                 const variant = seatVariant(seat);
@@ -84,7 +84,7 @@ export default function SeatMap({ seats = [], onSeatClick, holdsBySeat = {}, onH
                     className={`group relative flex h-9 w-9 items-center justify-center rounded-lg text-[10px] font-bold transition-all duration-150 ${SEAT_STYLE[variant]}`}
                   >
                     {variant === 'mine' && hold ? (
-                      <CountdownTimer expiresAt={hold.expiresAt} onExpire={() => onHoldExpire?.(seat.id)} className="text-[8.5px]" />
+                      <CountdownTimer expiresAt={hold.expiresAt} onExpire={() => onHoldExpire?.(seat.id)} className="text-[8.5px]" tones={DARK_SURFACE_TONES} />
                     ) : (
                       seat.number
                     )}
@@ -102,7 +102,7 @@ export default function SeatMap({ seats = [], onSeatClick, holdsBySeat = {}, onH
                 );
               })}
             </div>
-            <span className="w-6 font-display text-xs font-semibold text-slate-600">{row}</span>
+            <span className="w-6 font-display text-xs font-semibold text-slate-400">{row}</span>
           </motion.div>
         ))}
       </div>

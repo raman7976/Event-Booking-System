@@ -29,7 +29,7 @@ function FauxQR({ seedStr }) {
     }
   }
   return (
-    <svg viewBox="0 0 9 9" className="h-20 w-20 rounded bg-white p-1">
+    <svg viewBox="0 0 9 9" className="h-20 w-20 rounded bg-white p-1 ring-1 ring-slate-200">
       {cells.map(([x, y]) => <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#0a0a12" />)}
     </svg>
   );
@@ -38,8 +38,8 @@ function FauxQR({ seedStr }) {
 function Row({ label, value, mono }) {
   return (
     <div className="flex items-baseline justify-between gap-6">
-      <span className="text-xs uppercase tracking-wider text-slate-500">{label}</span>
-      <span className={`text-right text-sm font-medium ${mono ? 'font-mono text-xs' : ''}`}>{value}</span>
+      <span className="text-xs uppercase tracking-wider text-slate-400">{label}</span>
+      <span className={`text-right text-sm font-medium text-slate-800 ${mono ? 'font-mono text-xs' : ''}`}>{value}</span>
     </div>
   );
 }
@@ -68,7 +68,7 @@ export default function ConfirmationPage() {
       <motion.p
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-5 text-center font-display text-2xl font-extrabold sm:text-3xl"
+        className="mb-5 text-center font-display text-2xl font-extrabold text-slate-900 sm:text-3xl"
       >
         You&apos;re going! <span className="text-gradient">Seat locked.</span>
       </motion.p>
@@ -78,22 +78,22 @@ export default function ConfirmationPage() {
         initial={{ opacity: 0, scale: 0.92, rotate: -1.2 }}
         animate={{ opacity: 1, scale: 1, rotate: 0 }}
         transition={{ type: 'spring', stiffness: 260, damping: 19, delay: 0.1 }}
-        className="overflow-hidden rounded-3xl border border-white/10 bg-[#10101a] shadow-card">
+        className="overflow-hidden rounded-3xl bg-white shadow-card">
         {/* media header */}
         <div className="relative h-36 overflow-hidden">
           <div className={`absolute inset-0 bg-gradient-to-br ${media.gradient}`} />
           <img src={media.image} onError={coverErrorHandler(media.fallback)} alt="" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#10101a] to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute bottom-3 left-5 right-5">
-            <h1 className="font-display text-xl font-bold drop-shadow">{event.name}</h1>
-            <p className="text-xs text-slate-300">📍 {event.venue}</p>
+            <h1 className="font-display text-xl font-bold text-white drop-shadow">{event.name}</h1>
+            <p className="text-xs text-slate-200">📍 {event.venue}</p>
           </div>
-          <span className="chip absolute right-4 top-4 border-emerald-400/40 text-emerald-300">✓ CONFIRMED</span>
+          <span className="chip-onmedia absolute right-4 top-4 !text-emerald-200">✓ CONFIRMED</span>
         </div>
 
         {/* perforation */}
         <div className="ticket-notch relative flex items-center px-6">
-          <div className="w-full border-t-2 border-dashed border-white/10" />
+          <div className="w-full border-t-2 border-dashed border-slate-200" />
         </div>
 
         {/* stub */}

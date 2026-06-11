@@ -16,8 +16,8 @@ function Stat({ label, value, prefix = '', delay = 0 }) {
   const n = useCountUp(typeof value === 'number' ? value : 0);
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }} className="glass p-4">
-      <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">{label}</div>
-      <div className="mt-0.5 font-display text-2xl font-extrabold">
+      <div className="text-[11px] font-medium uppercase tracking-wider text-slate-400">{label}</div>
+      <div className="mt-0.5 font-display text-2xl font-extrabold text-slate-900">
         {value == null ? '—' : `${prefix}${n.toLocaleString()}`}
       </div>
     </motion.div>
@@ -74,10 +74,10 @@ export default function AdminPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-2xl font-extrabold sm:text-3xl">
+        <h1 className="font-display text-2xl font-extrabold text-slate-900 sm:text-3xl">
           Admin <span className="text-gradient">panel</span>
         </h1>
-        <span className="chip text-violet-300">👑 admin access</span>
+        <span className="chip !border-violet-200 !bg-violet-50 !text-violet-700">👑 admin access</span>
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -94,13 +94,13 @@ export default function AdminPage() {
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           className="glass p-5 lg:col-span-3"
         >
-          <h2 className="mb-4 font-display font-bold">Events</h2>
+          <h2 className="mb-4 font-display font-bold text-slate-900">Events</h2>
           {isLoading ? (
             <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="skeleton h-12 rounded-xl" />)}</div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-left text-xs uppercase tracking-wider text-slate-500">
+                <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wider text-slate-400">
                   <th className="py-2.5 pr-2 font-medium">Event</th>
                   <th className="py-2.5 pr-2 font-medium">Date</th>
                   <th className="py-2.5 pr-2 font-medium">Seats</th>
@@ -109,17 +109,17 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {events.map((ev) => (
-                  <tr key={ev.id} className="border-b border-white/5 transition-colors hover:bg-white/[0.03]">
+                  <tr key={ev.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50">
                     <td className="py-3 pr-2">
-                      <div className="font-medium text-slate-100">{ev.name}</div>
-                      <div className="text-xs text-slate-500">{ev.venue}</div>
+                      <div className="font-medium text-slate-900">{ev.name}</div>
+                      <div className="text-xs text-slate-400">{ev.venue}</div>
                     </td>
-                    <td className="py-3 pr-2 text-slate-400">{new Date(ev.event_date).toLocaleDateString()}</td>
+                    <td className="py-3 pr-2 text-slate-500">{new Date(ev.event_date).toLocaleDateString()}</td>
                     <td className="py-3 pr-2">
-                      <span className={ev.available_seats === 0 ? 'text-rose-300' : 'text-emerald-300'}>
+                      <span className={ev.available_seats === 0 ? 'text-rose-600' : 'text-emerald-600'}>
                         {ev.available_seats}
                       </span>
-                      <span className="text-slate-500">/{ev.total_seats}</span>
+                      <span className="text-slate-400">/{ev.total_seats}</span>
                     </td>
                     <td className="py-3">
                       <div className="flex gap-1.5">
@@ -129,7 +129,7 @@ export default function AdminPage() {
                           type="button"
                           onClick={() => deleteMut.mutate(ev.id)}
                           disabled={deleteMut.isPending}
-                          className="rounded-lg border border-rose-500/25 bg-rose-950/40 px-2 py-1 text-[11px] text-rose-300 transition hover:bg-rose-900/50 disabled:opacity-50"
+                          className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
                         >
                           🗑
                         </button>
@@ -151,32 +151,32 @@ export default function AdminPage() {
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}
           className="glass p-5 lg:col-span-2"
         >
-          <h2 className="mb-4 font-display font-bold">Create event</h2>
+          <h2 className="mb-4 font-display font-bold text-slate-900">Create event</h2>
           <div className="space-y-3">
             <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Event name" className="input-field" />
             <input required value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Venue" className="input-field" />
-            <input required type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} className="input-field [color-scheme:dark]" />
+            <input required type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} className="input-field" />
 
             <div className="space-y-2.5">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Seat sections</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Seat sections</div>
               {sections.map((sec, i) => (
-                <div key={i} className="rounded-xl border border-white/5 bg-black/30 p-3">
+                <div key={i} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
                   <div className="grid grid-cols-2 gap-2.5">
-                    <label className="text-[11px] text-slate-400">
+                    <label className="text-[11px] text-slate-500">
                       Rows (comma sep)
                       <input value={sec.rows} onChange={(e) => updateSection(i, { rows: e.target.value })} className="input-field mt-1 !py-1.5 text-xs" />
                     </label>
-                    <label className="text-[11px] text-slate-400">
+                    <label className="text-[11px] text-slate-500">
                       Seats per row
                       <input type="number" min="1" max="50" value={sec.cols} onChange={(e) => updateSection(i, { cols: e.target.value })} className="input-field mt-1 !py-1.5 text-xs" />
                     </label>
-                    <label className="text-[11px] text-slate-400">
+                    <label className="text-[11px] text-slate-500">
                       Category
                       <select value={sec.category} onChange={(e) => updateSection(i, { category: e.target.value })} className="input-field mt-1 !py-1.5 text-xs">
                         <option>VIP</option><option>PREMIUM</option><option>GENERAL</option>
                       </select>
                     </label>
-                    <label className="text-[11px] text-slate-400">
+                    <label className="text-[11px] text-slate-500">
                       Price ($)
                       <input type="number" min="1" value={sec.price} onChange={(e) => updateSection(i, { price: e.target.value })} className="input-field mt-1 !py-1.5 text-xs" />
                     </label>
