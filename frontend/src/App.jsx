@@ -11,6 +11,8 @@ import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import MyBookingsPage from './pages/MyBookingsPage.jsx';
+import BusSchedulePage from './pages/BusSchedulePage.jsx';
+import BusTripPage from './pages/BusTripPage.jsx';
 
 function PageSpinner() {
   return (
@@ -71,6 +73,7 @@ function Header() {
 
   const links = [
     { to: '/', label: 'Events', show: true, end: true },
+    { to: '/bus', label: 'Bus', show: true },
     { to: '/my-bookings', label: 'My bookings', show: status === 'authed' },
     { to: '/admin', label: 'Admin', show: isAdmin },
   ].filter((l) => l.show);
@@ -193,6 +196,8 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/events/:id" element={<EventPage />} />
+              <Route path="/bus" element={<BusSchedulePage />} />
+              <Route path="/bus/trips/:id" element={<BusTripPage />} />
               <Route path="/my-bookings" element={<RequireAuth><MyBookingsPage /></RequireAuth>} />
               <Route path="/confirmation" element={<RequireAuth><ConfirmationPage /></RequireAuth>} />
               <Route path="/admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />

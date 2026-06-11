@@ -60,9 +60,11 @@ export const apiFieldErrors = (err) => err?.response?.data?.error?.details || nu
 // ── Auth ──
 export const loginRequest = (email, password) =>
   api.post('/auth/login', { email, password }).then((r) => r.data);
-export const registerRequest = (name, email, password) =>
-  api.post('/auth/register', { name, email, password }).then((r) => r.data);
+export const registerRequest = (name, email, password, rollNumber) =>
+  api.post('/auth/register', { name, email, password, ...(rollNumber ? { rollNumber } : {}) }).then((r) => r.data);
 export const logoutRequest = () => api.post('/auth/logout').then((r) => r.data);
+export const setRollNumberRequest = (rollNumber) =>
+  api.patch('/auth/me', { rollNumber }).then((r) => r.data);
 
 // ── Events ──
 export const listEvents = (page = 1, limit = 50) =>
@@ -87,6 +89,18 @@ export const myBookings = () => api.get('/bookings/mine').then((r) => r.data.boo
 export const joinWaitlist = (eventId) => api.post(`/waitlist/${eventId}`).then((r) => r.data);
 export const leaveWaitlist = (eventId) => api.delete(`/waitlist/${eventId}`).then((r) => r.data);
 export const getWaitlist = (eventId) => api.get(`/waitlist/${eventId}`).then((r) => r.data);
+
+// ── Campus bus ──
+export const busSchedule = (date) =>
+  api.get('/bus/schedule', { params: date ? { date } : {} }).then((r) => r.data);
+export const busTrip = (id) => api.get(`/bus/trips/${id}`).then((r) => r.data);
+export const busMyTrips = () => api.get('/bus/me').then((r) => r.data.trips);
+export const busBook = (id) => api.post(`/bus/trips/${id}/book`).then((r) => r.data);
+export const busCancel = (id) => api.delete(`/bus/trips/${id}/book`).then((r) => r.data);
+export const busConfirm = (id) => api.post(`/bus/trips/${id}/confirm`).then((r) => r.data);
+export const busDecline = (id) => api.post(`/bus/trips/${id}/decline`).then((r) => r.data);
+export const busJoinWaitlist = (id) => api.post(`/bus/trips/${id}/waitlist`).then((r) => r.data);
+export const busLeaveWaitlist = (id) => api.delete(`/bus/trips/${id}/waitlist`).then((r) => r.data);
 
 // ── Admin ──
 export const adminOverview = () => api.get('/admin/overview').then((r) => r.data);

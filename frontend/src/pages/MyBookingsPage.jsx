@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { myBookings } from '../services/api.js';
+import { myBookings, busMyTrips } from '../services/api.js';
 import { eventMedia, coverErrorHandler } from '../lib/eventMedia.js';
 import CountdownTimer from '../components/CountdownTimer.jsx';
+import { MY_CHIP, MY_CHIP_LABEL } from './BusSchedulePage.jsx';
 
 const STATUS_CHIP = {
   confirmed: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -12,18 +14,103 @@ const STATUS_CHIP = {
   cancelled: 'border-slate-200 bg-slate-50 text-slate-500',
 };
 
+const hhmm = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+function BusTripsTab() {
+  const { data: trips = [], isLoading, error } = useQuery({ queryKey: ['bus-my-trips'], queryFn: busMyTrips });
+
+  if (isLoading) {
+    return <div className="space-y-3">{[0, 1].map((i) => <div key={i} className="skeleton h-20 rounded-2xl" />)}</div>;
+  }
+  if (error) return <p className="text-rose-500">Failed to load bus trips.</p>;
+  if (!trips.length) {
+    return (
+      <div className="glass p-12 text-center">
+        <div className="text-4xl">🚌</div>
+        <p className="mt-3 font-display font-semibold text-slate-800">No bus trips yet</p>
+        <p className="mt-1 text-sm text-slate-500">Booking opens one hour before each departure.</p>
+        <Link to="/bus" className="btn-primary mt-5">Today&apos;s schedule</Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {trips.map((t, i) => {
+        const chipKey = t.bookingStatus || (t.waitlisted ? 'waitlisted' : null);
+        const muted = ['declined', 'cancelled', 'auto_released', 'no_show'].includes(t.bookingStatus) || t.tripStatus === 'departed';
+        return (
+          <motion.div
+            key={t.tripId}
+            initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+          >
+            <Link
+              to={`/bus/trips/${t.tripId}`}
+              className={`glass-card flex flex-wrap items-center gap-4 p-4 transition hover:-translate-y-0.5 ${muted ? 'opacity-60' : ''}`}
+            >
+              <div className="w-20">
+                <div className="font-display text-lg font-extrabold text-slate-900">{hhmm(t.departureAt)}</div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bus {t.busNo}</div>
+              </div>
+              <div className="flex-1">
+                <div className="font-display text-sm font-bold text-slate-800">{t.origin} → {t.destination}</div>
+                <div className="text-xs text-slate-400">
+                  {new Date(t.departureAt).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}
+                  {t.tripStatus === 'departed' && ' · departed'}
+                </div>
+              </div>
+              {chipKey === 'waitlisted' || (!t.bookingStatus && t.waitlisted) ? (
+                <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-violet-700">
+                  Waitlisted
+                </span>
+              ) : (
+                t.bookingStatus && (
+                  <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${MY_CHIP[t.bookingStatus] || 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                    {MY_CHIP_LABEL[t.bookingStatus] || t.bookingStatus}
+                  </span>
+                )
+              )}
+            </Link>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function MyBookingsPage() {
+  const [tab, setTab] = useState('bus');
   const { data: bookings = [], isLoading, error, refetch } = useQuery({
     queryKey: ['my-bookings'],
     queryFn: myBookings,
+    enabled: tab === 'events',
   });
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-6 font-display text-3xl font-extrabold text-slate-900">
+      <h1 className="mb-5 font-display text-3xl font-extrabold text-slate-900">
         My <span className="text-gradient">bookings</span>
       </h1>
 
+      <div className="mb-6 inline-flex rounded-xl border border-slate-200 bg-white p-1">
+        {[['bus', '🚌 Bus trips'], ['events', '🎟️ Events']].map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
+              tab === key ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'bus' && <BusTripsTab />}
+
+      {tab === 'events' && (
+        <>
       {isLoading && (
         <div className="space-y-3">{[0, 1].map((i) => <div key={i} className="skeleton h-28 rounded-2xl" />)}</div>
       )}
@@ -95,6 +182,8 @@ export default function MyBookingsPage() {
           );
         })}
       </div>
+        </>
+      )}
     </div>
   );
 }

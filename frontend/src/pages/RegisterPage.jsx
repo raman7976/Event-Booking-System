@@ -20,6 +20,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [roll, setRoll] = useState('');
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -37,7 +38,7 @@ export default function RegisterPage() {
     if (!pwOk || mismatch) return;
     setBusy(true);
     try {
-      await register(name.trim(), email, password);
+      await register(name.trim(), email, password, roll.trim() || undefined);
       navigate('/', { replace: true });
     } catch (err) {
       setError(apiError(err));
@@ -64,6 +65,16 @@ export default function RegisterPage() {
             id="email" type="email" required value={email}
             onChange={(e) => setEmail(e.target.value)} autoComplete="email"
             className="input-field" placeholder="you@example.com"
+          />
+        </div>
+        <div>
+          <label htmlFor="roll" className="mb-1.5 block text-sm font-medium text-slate-700">
+            Roll number <span className="font-normal text-slate-400">(LNMIIT students — needed for the bus service)</span>
+          </label>
+          <input
+            id="roll" value={roll} maxLength={20}
+            onChange={(e) => setRoll(e.target.value.toUpperCase())}
+            className="input-field font-mono" placeholder="23UCS101 (optional)"
           />
         </div>
         <div>

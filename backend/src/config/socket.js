@@ -7,6 +7,7 @@ import { subscriber } from './redis.js';
 import { config } from './env.js';
 import { logger } from '../utils/logger.js';
 import { SEAT_UPDATES_CHANNEL, WAITLIST_NOTIFY_CHANNEL } from '../services/cacheService.js';
+import { TRIP_UPDATES_CHANNEL } from '../services/busService.js';
 
 export function initSocket(httpServer) {
   const io = new Server(httpServer, {
@@ -29,6 +30,16 @@ export function initSocket(httpServer) {
       if (eventId) socket.leave(`event:${eventId}`);
     });
 
+    // Bus vertical rooms: one per trip + a broadcast room for the schedule page.
+    socket.on('join-trip', (tripId) => {
+      if (tripId) socket.join(`trip:${tripId}`);
+    });
+    socket.on('leave-trip', (tripId) => {
+      if (tripId) socket.leave(`trip:${tripId}`);
+    });
+    socket.on('join-bus-schedule', () => socket.join('bus:schedule'));
+    socket.on('leave-bus-schedule', () => socket.leave('bus:schedule'));
+
     // Personal room for targeted notifications (e.g. waitlist seat available).
     // The client sends its access token; we verify it server-side rather than
     // trusting a client-supplied user id.
@@ -47,7 +58,7 @@ export function initSocket(httpServer) {
   });
 
   // ── Redis pub/sub -> local Socket.io rooms ──
-  subscriber.subscribe(SEAT_UPDATES_CHANNEL, WAITLIST_NOTIFY_CHANNEL, (err, count) => {
+  subscriber.subscribe(SEAT_UPDATES_CHANNEL, WAITLIST_NOTIFY_CHANNEL, TRIP_UPDATES_CHANNEL, (err, count) => {
     if (err) logger.error('[ws] subscribe failed:', err.message);
     else logger.info(`[ws] subscribed to ${count} channel(s) on ${config.instanceId}`);
   });
@@ -63,6 +74,8 @@ export function initSocket(httpServer) {
     if (channel === SEAT_UPDATES_CHANNEL) {
       const { eventId, seatId, status, timestamp } = data;
       io.to(`event:${eventId}`).emit('seat-update', { seatId, status, timestamp });
+    } else if (channel === TRIP_UPDATES_CHANNEL) {
+      io.to(`trip:${data.tripId}`).to('bus:schedule').emit('trip-update', data);
     } else if (channel === WAITLIST_NOTIFY_CHANNEL) {
       const { eventId, userId, seatId, timestamp } = data;
       io.to(`user:${userId}`).emit('waitlist-available', { eventId, seatId, timestamp });

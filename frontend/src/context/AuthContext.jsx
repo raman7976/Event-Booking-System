@@ -6,7 +6,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   setAccessToken, getAccessToken, bindSessionHandlers, refreshSession,
-  loginRequest, registerRequest, logoutRequest,
+  loginRequest, registerRequest, logoutRequest, setRollNumberRequest,
 } from '../services/api.js';
 import { getSocket } from '../services/socket.js';
 
@@ -48,11 +48,19 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
-  const register = useCallback(async (name, email, password) => {
-    const data = await registerRequest(name, email, password);
+  const register = useCallback(async (name, email, password, rollNumber) => {
+    const data = await registerRequest(name, email, password, rollNumber);
     setAccessToken(data.token);
     setUser(data.user);
     setStatus('authed');
+    return data.user;
+  }, []);
+
+  // Set-once roll number; backend returns a fresh access token with the claim.
+  const updateRollNumber = useCallback(async (rollNumber) => {
+    const data = await setRollNumberRequest(rollNumber);
+    setAccessToken(data.token);
+    setUser(data.user);
     return data.user;
   }, []);
 
@@ -61,13 +69,17 @@ export function AuthProvider({ children }) {
     dropSession();
   }, [dropSession]);
 
+  const campusDomain = 'lnmiit.ac.in';
   const value = {
     user,
     status,
     isAdmin: user?.role === 'admin',
+    isCampus: (user?.email || '').toLowerCase().endsWith(`@${campusDomain}`),
+    hasRoll: Boolean(user?.rollNumber),
     login,
     register,
     logout,
+    updateRollNumber,
   };
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
