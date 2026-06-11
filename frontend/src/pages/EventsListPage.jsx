@@ -20,57 +20,124 @@ function useSocketLive() {
   return live;
 }
 
+// Full-bleed photographic hero (Transpoco-style): edge-to-edge crowd photo with
+// a slow Ken Burns zoom, an animated light-trail swoosh, centered copy with one
+// accent phrase, a single bold CTA, and an uppercase tagline strip at the base.
+const HERO_IMG = 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=1920&q=72';
+const HERO_FALLBACK = 'https://picsum.photos/seed/seatlive-hero/1920/900';
+
+function Swoosh() {
+  return (
+    <svg
+      viewBox="0 0 1440 620"
+      preserveAspectRatio="none"
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="trail" x1="0" x2="1">
+          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0" />
+          <stop offset="35%" stopColor="#a78bfa" stopOpacity="0.9" />
+          <stop offset="70%" stopColor="#22d3ee" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* soft echo */}
+      <motion.path
+        d="M -60 470 C 320 250 760 560 1060 330 S 1500 170 1520 150"
+        fill="none" stroke="url(#trail)" strokeWidth="22" strokeLinecap="round" opacity="0.16"
+        initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+        transition={{ duration: 1.8, ease: 'easeInOut', delay: 0.5 }}
+      />
+      {/* bright trail */}
+      <motion.path
+        d="M -60 470 C 320 250 760 560 1060 330 S 1500 170 1520 150"
+        fill="none" stroke="url(#trail)" strokeWidth="3.5" strokeLinecap="round"
+        style={{ filter: 'drop-shadow(0 0 8px rgba(139,92,246,0.9))' }}
+        initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ duration: 1.8, ease: 'easeInOut', delay: 0.5 }}
+      />
+    </svg>
+  );
+}
+
 function Hero({ eventCount, live, authed }) {
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-white/10 px-6 py-14 sm:px-12 sm:py-20">
-      {/* animated backdrop */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-violet-950/80 via-[#0b0b14] to-fuchsia-950/40" />
-      <div className="animate-float-slow absolute -right-16 -top-20 -z-10 h-72 w-72 rounded-full bg-violet-600/25 blur-3xl" />
-      <div className="animate-float-slower absolute -bottom-24 left-1/4 -z-10 h-80 w-80 rounded-full bg-fuchsia-600/20 blur-3xl" />
-      <div className="animate-float-slow absolute right-1/3 top-1/2 -z-10 h-40 w-40 rounded-full bg-cyan-500/15 blur-2xl" />
+    <section className="full-bleed relative -mt-8 flex min-h-[580px] flex-col items-center justify-center overflow-hidden sm:min-h-[660px]">
+      {/* photographic backdrop */}
+      <div className="absolute inset-0 bg-gradient-to-br from-violet-950 via-[#0b0b14] to-fuchsia-950/60" />
+      <img
+        src={HERO_IMG}
+        onError={coverErrorHandler(HERO_FALLBACK)}
+        alt=""
+        className="animate-hero-zoom absolute inset-0 h-full w-full object-cover"
+      />
+      {/* legibility + blend into the page background */}
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#07070d]/80 via-transparent to-[#07070d]" />
+      <Swoosh />
 
+      {/* centered copy */}
       <motion.div
         initial="hidden"
         animate="show"
-        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.12 } } }}
-        className="max-w-2xl"
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.13 } } }}
+        className="relative z-10 flex max-w-3xl flex-col items-center px-4 text-center"
       >
-        <motion.span
-          variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}
-          className="chip text-cyan-300"
+        <motion.p
+          variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
+          className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.35em] text-slate-200/90"
         >
           <span className={`h-2 w-2 rounded-full ${live ? 'bg-emerald-400 animate-pulse-dot' : 'bg-slate-500'}`} />
-          {live ? 'Realtime connection live' : 'Connecting…'}
-        </motion.span>
+          #1 real-time seat booking technology
+        </motion.p>
 
         <motion.h1
-          variants={{ hidden: { opacity: 0, y: 22 }, show: { opacity: 1, y: 0 } }}
-          transition={{ duration: 0.55, ease: 'easeOut' }}
-          className="mt-5 font-display text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-6xl"
+          variants={{ hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="mt-5 font-display text-5xl font-extrabold leading-[1.05] tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] sm:text-7xl"
         >
-          Every seat,
+          Every Seat,
           <br />
-          <span className="text-gradient">claimed in real time.</span>
+          Claimed in <span className="text-gradient">Real Time</span>
         </motion.h1>
 
         <motion.p
-          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-          className="mt-5 max-w-lg text-base leading-relaxed text-slate-400 sm:text-lg"
+          variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }}
+          className="mt-5 max-w-xl text-base leading-relaxed text-slate-200/85 sm:text-lg"
         >
-          Concerts, buses, courses — watch seats turn amber as other people grab them,
-          hold yours for 8 minutes, and never fight anyone for the same spot.
+          Hold a seat for 8 minutes, pay securely, and watch the map update live for
+          everyone — no refreshes, no double-booking.
         </motion.p>
 
         <motion.div
-          variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }}
-          className="mt-8 flex flex-wrap items-center gap-3"
+          variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}
+          className="mt-9 flex flex-wrap items-center justify-center gap-3"
         >
-          <a href="#events" className="btn-primary">
-            Browse {eventCount || ''} live event{eventCount === 1 ? '' : 's'} ↓
-          </a>
-          {!authed && <Link to="/register" className="btn-ghost">Create free account</Link>}
+          {authed ? (
+            <a href="#events" className="btn-primary !px-8 !py-3.5 text-base uppercase tracking-wide">
+              Browse {eventCount || ''} live event{eventCount === 1 ? '' : 's'} ↓
+            </a>
+          ) : (
+            <>
+              <Link to="/register" className="btn-primary !px-8 !py-3.5 text-base uppercase tracking-wide">
+                Get started now
+              </Link>
+              <a href="#events" className="btn-ghost !px-6 !py-3.5">Browse events ↓</a>
+            </>
+          )}
         </motion.div>
       </motion.div>
+
+      {/* tagline strip */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.1, duration: 0.8 }}
+        className="absolute inset-x-0 bottom-6 z-10 text-center text-[10px] font-semibold uppercase tracking-[0.45em] text-slate-300/60"
+      >
+        The fairest way to claim a seat
+      </motion.p>
     </section>
   );
 }

@@ -23,6 +23,7 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--bg);
   color: #e4e4ef;
+  overflow-x: clip; /* full-bleed sections can't cause sideways scroll */
   background-image:
     radial-gradient(900px 500px at 85% -10%, rgba(139, 92, 246, 0.14), transparent 60%),
     radial-gradient(700px 420px at -10% 25%, rgba(217, 70, 239, 0.08), transparent 60%),
@@ -42,6 +43,12 @@ body {
 
 /* ─── Reusable surfaces & controls ──────────────────────────────── */
 @layer components {
+  /* Escape a centered max-width container to span the full viewport. */
+  .full-bleed {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+  }
+
   .glass {
     @apply rounded-2xl border;
     background: var(--surface);
@@ -97,9 +104,14 @@ body {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.45; transform: scale(0.8); }
 }
+@keyframes hero-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.12); }
+}
 .animate-float-slow { animation: float-slow 14s ease-in-out infinite; }
 .animate-float-slower { animation: float-slower 18s ease-in-out infinite; }
 .animate-pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+.animate-hero-zoom { animation: hero-zoom 24s ease-in-out infinite alternate; }
 
 .seat-flash-overlay {
   position: absolute;
