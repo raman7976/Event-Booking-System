@@ -30,6 +30,16 @@ export const publicUser = (u) => ({
   noShowCount: u.no_show_count,
 });
 
+// LNMIIT student addresses embed the roll number as the local part
+// (23ucs689@lnmiit.ac.in -> 23UCS689). The shape guard keeps staff addresses
+// (admin@, transport.office@) from deriving a bogus roll.
+const ROLL_LOCAL_RE = /^\d{2}[a-z]{2,4}\d{1,4}$/i;
+export function deriveRollFromEmail(email) {
+  const [local = '', domain = ''] = String(email).toLowerCase().split('@');
+  if (domain !== config.bus.emailDomain) return null;
+  return ROLL_LOCAL_RE.test(local) ? local.toUpperCase() : null;
+}
+
 export function signAccessToken(user) {
   return jwt.sign(
     {

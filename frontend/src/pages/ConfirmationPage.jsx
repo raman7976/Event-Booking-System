@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import Confetti from '../components/ui/Confetti.jsx';
 import { eventMedia, coverErrorHandler } from '../lib/eventMedia.js';
 import Icon from '../components/ui/Icon.jsx';
+import { inr } from '../lib/money.js';
 
 // Real client-side "Add to calendar": builds an .ics VEVENT data URI.
 function icsHref(event, seat) {
@@ -20,13 +21,16 @@ function icsHref(event, seat) {
   return `data:text/calendar;charset=utf-8,${encodeURIComponent(body)}`;
 }
 
-// Decorative deterministic "scan code" for the ticket stub.
+// Decorative deterministic "scan code" for the ticket stub. Each cell hashes
+// (seed, x, y) independently — a plain seed*x*y product goes all-zero whenever
+// the seed is divisible by the modulus, which blanked 1-in-11 tickets.
 function FauxQR({ seedStr }) {
   const seed = [...seedStr].reduce((a, c) => a + c.charCodeAt(0), 7);
   const cells = [];
   for (let y = 0; y < 9; y += 1) {
     for (let x = 0; x < 9; x += 1) {
-      if (((seed * (x + 3) * (y + 7)) % 11) > 4) cells.push([x, y]);
+      const h = (Math.imul(seed + x * 9 + y, 2654435761) >>> 0) % 11;
+      if (h > 4) cells.push([x, y]);
     }
   }
   return (
@@ -103,7 +107,7 @@ export default function ConfirmationPage() {
             <Row label="Date" value={date.toLocaleDateString([], { dateStyle: 'medium' })} />
             <Row label="Time" value={date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} />
             <Row label="Seat" value={`${seat.row}${seat.number} · ${seat.category}`} />
-            <Row label="Paid" value={`$${payment.amount} · ${payment.method}`} />
+            <Row label="Paid" value={`${inr(payment.amount)} · ${payment.method}`} />
             <Row label="Txn" value={payment.transactionId} mono />
           </div>
           <div className="flex flex-col items-center justify-center gap-1.5">

@@ -228,7 +228,7 @@ function buildReason(seats, prefs, total) {
   if (prefs.has('back')) tags.push('toward the back');
   if (prefs.has('aisle')) tags.push('on the aisle');
   const tagStr = tags.length ? ` (${tags.join(', ')})` : '';
-  return `Recommended ${seats.length} seat(s) ${labels}${tagStr} for a total of $${total}.`;
+  return `Recommended ${seats.length} seat(s) ${labels}${tagStr} for a total of ₹${total}.`;
 }
 
 /** Deterministic recommender used when Gemini is unavailable or fails. */
@@ -307,7 +307,7 @@ function heuristicRecommend(available, groupSize, maxBudget, prefs) {
 }
 
 function buildPrompt(available, groupSize, maxBudget, prefs) {
-  const seatLines = available.map((s) => `${s.id} | ${s.row}${s.number} | ${s.category} | $${s.price}`).join('\n');
+  const seatLines = available.map((s) => `${s.id} | ${s.row}${s.number} | ${s.category} | ₹${s.price}`).join('\n');
   return [
     'You are a seat recommendation assistant for an event booking system.',
     'Available seats (id | seat | category | price):',
@@ -315,7 +315,7 @@ function buildPrompt(available, groupSize, maxBudget, prefs) {
     '',
     `Recommend exactly ${groupSize} seat(s)` +
       (prefs.length ? ` that are ${prefs.join(', ')}` : '') +
-      (maxBudget != null ? ` with a combined price under $${maxBudget}` : '') + '.',
+      (maxBudget != null ? ` with a combined price under ₹${maxBudget}` : '') + '.',
     'Guidance: same row for "together", lower rows (A, B) for "front", higher rows for "back", row-end seats for "aisle".',
     'Respond with ONLY JSON: {"recommendedSeatIds": ["<id>", ...], "reason": "<short explanation>"}.',
     'Only use ids from the list above and never exceed the budget.',

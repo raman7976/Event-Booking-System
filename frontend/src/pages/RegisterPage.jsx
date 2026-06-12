@@ -3,8 +3,10 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth.js';
 import { apiError, apiFieldErrors } from '../services/api.js';
+import { deriveRollFromEmail } from '../lib/campus.js';
 import AuthLayout from '../components/AuthLayout.jsx';
 import PasswordInput from '../components/PasswordInput.jsx';
+import Icon from '../components/ui/Icon.jsx';
 
 const RULES = [
   ['8+ characters', (pw) => pw.length >= 8],
@@ -30,6 +32,9 @@ export default function RegisterPage() {
   const ruleState = RULES.map(([label, test]) => [label, test(password)]);
   const pwOk = ruleState.every(([, ok]) => ok);
   const mismatch = confirm && confirm !== password;
+  // Institute emails carry the roll number as the local part — derive it live
+  // and lock the field (the backend enforces the same rule).
+  const derivedRoll = deriveRollFromEmail(email);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -38,7 +43,7 @@ export default function RegisterPage() {
     if (!pwOk || mismatch) return;
     setBusy(true);
     try {
-      await register(name.trim(), email, password, roll.trim() || undefined);
+      await register(name.trim(), email, password, (derivedRoll || roll.trim()) || undefined);
       navigate('/', { replace: true });
     } catch (err) {
       setError(apiError(err));
@@ -64,18 +69,32 @@ export default function RegisterPage() {
           <input
             id="email" type="email" required value={email}
             onChange={(e) => setEmail(e.target.value)} autoComplete="email"
-            className="input-field" placeholder="you@example.com"
+            className="input-field" placeholder="23ucs689@lnmiit.ac.in — or any email"
           />
         </div>
         <div>
           <label htmlFor="roll" className="mb-1.5 block text-sm font-medium text-slate-700">
             Roll number <span className="font-normal text-slate-400">(LNMIIT students — needed for the bus service)</span>
           </label>
-          <input
-            id="roll" value={roll} maxLength={20}
-            onChange={(e) => setRoll(e.target.value.toUpperCase())}
-            className="input-field font-mono" placeholder="23UCS101 (optional)"
-          />
+          {derivedRoll ? (
+            <>
+              <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5">
+                <span className="font-mono text-sm font-semibold tracking-wide text-slate-900">{derivedRoll}</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+                  <Icon name="check-circle" size={13} /> auto-detected
+                </span>
+              </div>
+              <p className="mt-1.5 text-xs text-slate-400">
+                Taken from your institute email — it identifies you on campus bus bookings.
+              </p>
+            </>
+          ) : (
+            <input
+              id="roll" value={roll} maxLength={20}
+              onChange={(e) => setRoll(e.target.value.toUpperCase())}
+              className="input-field font-mono" placeholder="23UCS101 (optional)"
+            />
+          )}
         </div>
         <div>
           <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
@@ -123,7 +142,7 @@ export default function RegisterPage() {
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-500">
-        Already registered? <Link to="/login" className="font-medium text-violet-700 hover:underline">Sign in</Link>
+        Already registered? <Link to="/login" className="font-semibold text-slate-900 underline decoration-slate-300 underline-offset-4 transition hover:decoration-slate-900">Sign in</Link>
       </p>
     </AuthLayout>
   );

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import ProgressRing from './ui/ProgressRing.jsx';
 import Icon from './ui/Icon.jsx';
+import { inr } from '../lib/money.js';
 
 const formatCard = (v) => v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
 const formatExp = (v) => {
@@ -74,7 +75,7 @@ export default function BookingModal({ seat, hold, onConfirm, onCancel, busy, er
             <div className="mt-5 flex justify-between font-mono text-xs text-white/85">
               <span>{exp || 'MM/YY'}</span>
               <span>{cvv ? '•'.repeat(cvv.length) : 'CVV'}</span>
-              <span className="font-sans font-semibold">${seat.price}</span>
+              <span className="font-sans font-semibold">{inr(seat.price)}</span>
             </div>
           </div>
 
@@ -116,7 +117,7 @@ export default function BookingModal({ seat, hold, onConfirm, onCancel, busy, er
                   Processing…
                 </>
               ) : (
-                <><Icon name="lock" size={15} /> Pay ${seat.price}</>
+                <><Icon name="lock" size={15} /> Pay {inr(seat.price)}</>
               )}
             </button>
             <p className="text-center text-[11px] text-slate-400">

@@ -10,6 +10,7 @@ import {
 import { useSeats } from '../hooks/useSeats.js';
 import { useBooking } from '../hooks/useBooking.js';
 import { eventMedia, coverErrorHandler } from '../lib/eventMedia.js';
+import { inr } from '../lib/money.js';
 import { useToast } from '../components/ui/Toast.jsx';
 import SeatMap from '../components/SeatMap.jsx';
 import SeatLegend from '../components/SeatLegend.jsx';
@@ -52,6 +53,9 @@ export default function EventPage() {
   const media = event ? eventMedia(event) : null;
   const soldOut = seats.length > 0 && seats.every((s) => s.status !== 'available');
   const myHoldCount = Object.keys(holdsBySeat).length;
+  // Price tiers for the header strip (each category carries one price).
+  const tiers = [...new Map(seats.filter((s) => s.price != null).map((s) => [s.category, s.price]))]
+    .sort((a, b) => b[1] - a[1]);
 
   const { data: waitlistInfo, refetch: refetchWaitlist } = useQuery({
     queryKey: ['waitlist', id], queryFn: () => getWaitlist(id), enabled: Boolean(id) && authStatus === 'authed',
@@ -185,6 +189,9 @@ export default function EventPage() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            {event?.base_price != null && (
+              <span className="chip-onmedia">from {inr(event.base_price)}</span>
+            )}
             {event && (
               <span className="chip-onmedia !text-emerald-200">
                 {event.available_seats} seats left
@@ -208,13 +215,13 @@ export default function EventPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className={`relative overflow-hidden rounded-2xl bg-white p-5 shadow-card transition-shadow ${
-          recBusy ? 'ring-2 ring-fuchsia-300/70' : ''
+        className={`glass-card relative overflow-hidden p-5 transition-shadow ${
+          recBusy ? 'ring-2 ring-violet-300/60' : ''
         }`}
       >
         {recBusy && (
           <motion.div
-            className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-violet-500 via-fuchsia-400 to-cyan-400"
+            className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-violet-600 via-blue-500 to-cyan-400"
             animate={{ x: ['-100%', '100%'] }}
             transition={{ repeat: Infinity, duration: 1.1, ease: 'linear' }}
           />
@@ -239,7 +246,7 @@ export default function EventPage() {
             />
           </label>
           <label className="text-xs text-slate-500">
-            Budget ($)
+            Budget (₹)
             <input
               type="number" min="0" value={budget} placeholder="any"
               onChange={(e) => setBudget(e.target.value)}
@@ -255,7 +262,7 @@ export default function EventPage() {
                 onClick={() => togglePref(p)}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
                   prefs.has(p)
-                    ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-glow-sm scale-105'
+                    ? 'bg-slate-950 text-white shadow-md scale-105'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                 }`}
               >
@@ -304,9 +311,27 @@ export default function EventPage() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.16 }}
-        className="glass p-5 sm:p-7"
+        className="glass-card p-5 sm:p-7"
       >
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">
+              <span className="h-2 w-2 animate-pulse-dot rounded-full bg-emerald-500" /> Live seat map
+            </p>
+            <h2 className="mt-1.5 font-display text-xl font-extrabold text-slate-900">Pick your seats</h2>
+          </div>
+          {tiers.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {tiers.map(([cat, price]) => (
+                <span key={cat} className="chip !py-1.5">
+                  <span className="font-bold text-slate-900">{cat}</span>
+                  <span className="text-slate-500">{inr(price)}</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
           <SeatLegend />
           {myHoldCount > 0 && (
             <span className="chip !border-blue-200 !bg-blue-50 !text-blue-700">
@@ -323,7 +348,7 @@ export default function EventPage() {
         )}
         {authStatus !== 'authed' && !isLoading && (
           <p className="mt-6 text-center text-sm text-slate-500">
-            You&apos;re browsing live data — <Link to="/login" state={{ from: location }} className="font-medium text-violet-700 underline">sign in</Link> to grab a seat.
+            You&apos;re browsing live data — <Link to="/login" state={{ from: location }} className="font-semibold text-slate-900 underline decoration-slate-300 underline-offset-4 transition hover:decoration-slate-900">sign in</Link> to grab a seat.
           </p>
         )}
       </motion.section>

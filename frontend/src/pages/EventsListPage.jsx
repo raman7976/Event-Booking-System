@@ -6,6 +6,7 @@ import { listEvents } from '../services/api.js';
 import { useAuth } from '../hooks/useAuth.js';
 import { getSocket } from '../services/socket.js';
 import { eventMedia, coverErrorHandler } from '../lib/eventMedia.js';
+import { inr } from '../lib/money.js';
 import Icon from '../components/ui/Icon.jsx';
 
 function useSocketLive() {
@@ -348,7 +349,7 @@ function EventCard({ ev, isAdmin, index }) {
         {soldOut ? (
           <span className="chip-onmedia absolute right-3.5 top-3.5 !text-rose-250 !bg-rose-950/50">Sold out</span>
         ) : (
-          <span className="chip-onmedia absolute right-3.5 top-3.5 !text-emerald-250 !bg-emerald-950/50">from ${ev.base_price}</span>
+          <span className="chip-onmedia absolute right-3.5 top-3.5 !text-emerald-250 !bg-emerald-950/50">from {inr(ev.base_price)}</span>
         )}
 
         <div className="absolute bottom-3.5 left-3.5 right-3.5 text-white">

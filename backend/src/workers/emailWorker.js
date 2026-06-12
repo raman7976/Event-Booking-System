@@ -51,13 +51,13 @@ function buildEmail(data) {
     return { to, subject, html, text };
   }
 
-  const seatList = seats.map((s) => `${s.row}${s.number} (${s.category}) — $${s.price}`).join(', ') || '—';
+  const seatList = seats.map((s) => `${s.row}${s.number} (${s.category}) — ₹${s.price}`).join(', ') || '—';
   const subject = `Booking confirmed: ${eventName}`;
-  const text = `Hi ${userName}, your booking for ${eventName}${venue ? ` at ${venue}` : ''} is confirmed.\nSeats: ${seatList}\nTotal: $${total}\nTransaction: ${transactionId}`;
+  const text = `Hi ${userName}, your booking for ${eventName}${venue ? ` at ${venue}` : ''} is confirmed.\nSeats: ${seatList}\nTotal: ₹${total}\nTransaction: ${transactionId}`;
   const html = `<h2>Booking confirmed 🎟️</h2>
     <p>Hi ${userName}, your booking for <b>${eventName}</b>${venue ? ` at ${venue}` : ''} is confirmed.</p>
     <p><b>Seats:</b> ${seatList}</p>
-    <p><b>Total:</b> $${total}</p>
+    <p><b>Total:</b> ₹${total}</p>
     <p><b>Transaction:</b> ${transactionId}</p>`;
   return { to, subject, html, text };
 }

@@ -10,9 +10,9 @@ const EVENTS = [
     venue: 'The Fillmore',
     daysOut: 20,
     layout: [
-      { rows: ['A', 'B'], cols: 10, category: 'VIP', price: 250 },
-      { rows: ['C'], cols: 10, category: 'PREMIUM', price: 150 },
-      { rows: ['D', 'E'], cols: 10, category: 'GENERAL', price: 80 },
+      { rows: ['A', 'B'], cols: 10, category: 'VIP', price: 2499 },
+      { rows: ['C'], cols: 10, category: 'PREMIUM', price: 1499 },
+      { rows: ['D', 'E'], cols: 10, category: 'GENERAL', price: 799 },
     ],
   },
   {
@@ -20,8 +20,8 @@ const EVENTS = [
     venue: 'Central Station — Bay 7',
     daysOut: 3,
     layout: [
-      { rows: ['A', 'B'], cols: 4, category: 'PREMIUM', price: 65 },
-      { rows: ['C', 'D', 'E', 'F', 'G', 'H'], cols: 4, category: 'GENERAL', price: 45 },
+      { rows: ['A', 'B'], cols: 4, category: 'PREMIUM', price: 649 },
+      { rows: ['C', 'D', 'E', 'F', 'G', 'H'], cols: 4, category: 'GENERAL', price: 449 },
     ],
   },
   {
@@ -29,7 +29,7 @@ const EVENTS = [
     venue: 'Engineering Hall 3',
     daysOut: 30,
     layout: [
-      { rows: ['A', 'B', 'C', 'D'], cols: 8, category: 'GENERAL', price: 20 },
+      { rows: ['A', 'B', 'C', 'D'], cols: 8, category: 'GENERAL', price: 199 },
     ],
   },
 ];

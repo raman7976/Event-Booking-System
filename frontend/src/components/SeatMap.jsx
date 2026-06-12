@@ -80,7 +80,7 @@ export default function SeatMap({ seats = [], onSeatClick, holdsBySeat = {}, onH
                     type="button"
                     disabled={!clickable}
                     onClick={() => clickable && onSeatClick?.(seat)}
-                    aria-label={`Seat ${seat.row}${seat.number}, ${seat.category}, $${seat.price}, ${seat.heldByMe ? 'your hold' : seat.status}`}
+                    aria-label={`Seat ${seat.row}${seat.number}, ${seat.category}, ₹${seat.price}, ${seat.heldByMe ? 'your hold' : seat.status}`}
                     className={`group relative flex h-9 w-9 items-center justify-center rounded-lg text-[10px] font-bold transition-all duration-150 ${SEAT_STYLE[variant]}`}
                   >
                     {variant === 'mine' && hold ? (
@@ -95,7 +95,7 @@ export default function SeatMap({ seats = [], onSeatClick, holdsBySeat = {}, onH
                     <span className="pointer-events-none absolute -top-12 left-1/2 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-[#16161f] px-2.5 py-1.5 text-[10px] font-medium text-slate-200 opacity-0 shadow-card transition-opacity duration-150 group-hover:opacity-100 md:block">
                       <b className="font-display">{seat.row}{seat.number}</b>
                       <span className="mx-1.5 text-slate-500">·</span>{seat.category}
-                      <span className="mx-1.5 text-slate-500">·</span>${seat.price}
+                      <span className="mx-1.5 text-slate-500">·</span>₹{seat.price}
                       <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#16161f]" />
                     </span>
                   </button>

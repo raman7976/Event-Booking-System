@@ -7,6 +7,7 @@ import { eventMedia, coverErrorHandler } from '../lib/eventMedia.js';
 import CountdownTimer from '../components/CountdownTimer.jsx';
 import { MY_CHIP, MY_CHIP_LABEL } from './BusSchedulePage.jsx';
 import Icon from '../components/ui/Icon.jsx';
+import { inr } from '../lib/money.js';
 
 const STATUS_CHIP = {
   confirmed: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -159,7 +160,7 @@ export default function MyBookingsPage() {
                   <div className="mt-1.5 text-sm text-slate-700">
                     Seat <b>{b.seat.row}{b.seat.number}</b>
                     <span className="mx-1.5 text-slate-600">·</span>{b.seat.category}
-                    <span className="mx-1.5 text-slate-600">·</span>${b.seat.price}
+                    <span className="mx-1.5 text-slate-600">·</span>{inr(b.seat.price)}
                   </div>
                 </div>
 

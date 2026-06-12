@@ -11,7 +11,7 @@ import { useCountUp } from '../hooks/useCountUp.js';
 import { useToast } from '../components/ui/Toast.jsx';
 import Icon from '../components/ui/Icon.jsx';
 
-const emptySection = () => ({ rows: 'A,B', cols: 8, category: 'GENERAL', price: 50 });
+const emptySection = () => ({ rows: 'A,B', cols: 8, category: 'GENERAL', price: 499 });
 
 function Stat({ label, value, prefix = '', delay = 0 }) {
   const n = useCountUp(typeof value === 'number' ? value : 0);
@@ -19,7 +19,7 @@ function Stat({ label, value, prefix = '', delay = 0 }) {
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }} className="glass p-4">
       <div className="text-[11px] font-medium uppercase tracking-wider text-slate-400">{label}</div>
       <div className="mt-0.5 font-display text-2xl font-extrabold text-slate-900">
-        {value == null ? '—' : `${prefix}${n.toLocaleString()}`}
+        {value == null ? '—' : `${prefix}${n.toLocaleString('en-IN')}`}
       </div>
     </motion.div>
   );
@@ -89,7 +89,7 @@ export default function AdminPage() {
         <Stat label="Users" value={overview?.users} delay={0.05} />
         <Stat label="Seats sold" value={overview?.seatsSold} delay={0.1} />
         <Stat label="Bookings" value={overview?.confirmedBookings} delay={0.15} />
-        <Stat label="Revenue" value={overview?.revenue} prefix="$" delay={0.2} />
+        <Stat label="Revenue" value={overview?.revenue} prefix="₹" delay={0.2} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-5">
@@ -181,7 +181,7 @@ export default function AdminPage() {
                       </select>
                     </label>
                     <label className="text-[11px] text-slate-500">
-                      Price ($)
+                      Price (₹)
                       <input type="number" min="1" value={sec.price} onChange={(e) => updateSection(i, { price: e.target.value })} className="input-field mt-1 !py-1.5 text-xs" />
                     </label>
                   </div>

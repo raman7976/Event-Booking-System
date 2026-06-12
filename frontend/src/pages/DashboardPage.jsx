@@ -29,7 +29,7 @@ function Stat({ label, value, prefix = '', suffix = '', delay = 0 }) {
     >
       <div className="text-xs font-medium uppercase tracking-wider text-slate-400">{label}</div>
       <div className="mt-1 font-display text-3xl font-extrabold text-slate-900">
-        {prefix}{n.toLocaleString()}{suffix}
+        {prefix}{n.toLocaleString('en-IN')}{suffix}
       </div>
     </motion.div>
   );
@@ -91,7 +91,7 @@ export default function DashboardPage() {
         <Stat label="Total seats" value={data.event.total_seats} />
         <Stat label="Available" value={data.event.available_seats} delay={0.06} />
         <Stat label="Occupancy" value={data.occupancy} suffix="%" delay={0.12} />
-        <Stat label="Revenue" value={data.totalRevenue} prefix="$" delay={0.18} />
+        <Stat label="Revenue" value={data.totalRevenue} prefix="₹" delay={0.18} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -115,7 +115,7 @@ export default function DashboardPage() {
               <Pie
                 data={revData} dataKey="revenue" nameKey="name"
                 innerRadius={55} outerRadius={88} paddingAngle={4} cornerRadius={6}
-                label={(e) => `${e.name} $${e.revenue}`}
+                label={(e) => `${e.name} ₹${e.revenue}`}
               >
                 {revData.map((d, i) => <Cell key={d.name} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="transparent" />)}
               </Pie>

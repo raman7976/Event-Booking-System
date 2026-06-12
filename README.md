@@ -193,8 +193,11 @@ A second product vertical on the same platform: the institute's daily shuttle
 **Rules**
 - Booking opens **60 min** before departure; free; **one seat per rider per trip**; no seat
   selection — the system assigns a seat or you join the queue.
-- Requires an **@lnmiit.ac.in** account with a **roll number** on the profile (set once at
-  registration or via `PATCH /api/auth/me`).
+- Requires an **@lnmiit.ac.in** account with a **roll number** on the profile. Roll-shaped
+  institute addresses derive it **automatically** (`23ucs689@lnmiit.ac.in` → `23UCS689`) at
+  registration — and on login for older accounts; staff-style locals (`admin@…`) don't match
+  the pattern and fall back to manual entry (`PATCH /api/auth/me`, set once). A typed roll
+  that contradicts the email is rejected.
 - From **T-20 min** riders must confirm boarding; an explicit "Not boarding" frees the seat
   immediately. At **T-10 min** unconfirmed seats are auto-released (holder gets a no-show) and
   handed to the **public FIFO waitlist** (visible to everyone: name + roll + position).

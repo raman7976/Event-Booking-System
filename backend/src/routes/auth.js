@@ -15,6 +15,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { Errors } from '../utils/errors.js';
 import {
   publicUser,
+  deriveRollFromEmail,
   signAccessToken,
   issueRefreshToken,
   rotateRefreshToken,
@@ -70,15 +71,31 @@ router.post(
   authLimiter,
   validate(registerSchema),
   asyncHandler(async (req, res) => {
-    const { email, password, name, rollNumber } = req.body;
+    const { email, password, name } = req.body;
     const exists = await writePool.query('SELECT 1 FROM users WHERE email = $1', [email]);
     if (exists.rowCount) throw Errors.conflict('Email already registered');
+
+    // A roll-shaped institute address IS the campus identity, so the derived
+    // roll wins over the form field (23ucs689@lnmiit.ac.in -> 23UCS689).
+    const derived = deriveRollFromEmail(email);
+    let rollNumber = req.body.rollNumber || null;
+    if (derived) {
+      if (rollNumber && rollNumber !== derived) {
+        throw Errors.validation(`Roll number must match your institute email (${derived})`);
+      }
+      rollNumber = derived;
+    }
     if (rollNumber) {
       const rollTaken = await writePool.query(
         'SELECT 1 FROM users WHERE UPPER(roll_number) = $1',
         [rollNumber],
       );
-      if (rollTaken.rowCount) throw Errors.conflict('Roll number already registered');
+      if (rollTaken.rowCount) {
+        // A typed roll clashing is a hard error; a derived clash must not block
+        // signup — the account is created without a roll to sort out later.
+        if (req.body.rollNumber) throw Errors.conflict('Roll number already registered');
+        rollNumber = null;
+      }
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -114,6 +131,26 @@ router.post(
     }
 
     await clearLoginFailures(email);
+
+    // Accounts that predate auto-derivation get their roll filled on login.
+    // The NOT EXISTS guard (plus the unique-violation catch for the tiny race
+    // window) means a clash simply leaves the roll unset — login never fails.
+    if (!rows[0].roll_number) {
+      const derived = deriveRollFromEmail(email);
+      if (derived) {
+        try {
+          const { rows: healed } = await writePool.query(
+            `UPDATE users SET roll_number = $1
+              WHERE id = $2 AND roll_number IS NULL
+                AND NOT EXISTS (SELECT 1 FROM users WHERE UPPER(roll_number) = $1 AND id <> $2)
+              RETURNING roll_number`,
+            [derived, rows[0].id],
+          );
+          if (healed.length) rows[0].roll_number = healed[0].roll_number;
+        } catch { /* keep roll unset */ }
+      }
+    }
+
     await respondWithSession(res, rows[0]);
   }),
 );
