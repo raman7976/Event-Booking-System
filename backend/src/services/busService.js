@@ -18,6 +18,7 @@ import { publishWaitlistNotify, markUserWrite } from './cacheService.js';
 import { emitTripUpdate } from '../lib/emitter.js';
 import { logger } from '../utils/logger.js';
 import { Errors } from '../utils/errors.js';
+import { busActions, waitlistPromotions } from '../config/metrics.js';
 
 // ── time helpers ──
 export const tripTimes = (departureAt) => {
@@ -256,6 +257,7 @@ export async function bookSeat({ tripId, userId }) {
 
     publishTripUpdate(tripId).catch(() => {});
     markUserWrite(userId).catch(() => {});
+    busActions.inc({ action: 'book' });
     return { bookingId: booking[0].id, status: booking[0].status, seatNumber: null };
   });
 }
@@ -291,8 +293,14 @@ async function freeSeat({ tripId, userId, newStatus }) {
   return { released: true, promoted: result.promotions.length };
 }
 
-export const cancelBooking = (args) => freeSeat({ ...args, newStatus: 'cancelled' });
-export const declineBoarding = (args) => freeSeat({ ...args, newStatus: 'declined' });
+export const cancelBooking = (args) => {
+  busActions.inc({ action: 'cancel' });
+  return freeSeat({ ...args, newStatus: 'cancelled' });
+};
+export const declineBoarding = (args) => {
+  busActions.inc({ action: 'decline' });
+  return freeSeat({ ...args, newStatus: 'declined' });
+};
 
 /** "I'm boarding" — only meaningful during the confirm window. */
 export async function confirmBoarding({ tripId, userId }) {
@@ -323,6 +331,7 @@ export async function confirmBoarding({ tripId, userId }) {
   }
   await publishTripUpdate(tripId);
   markUserWrite(userId).catch(() => {});
+  busActions.inc({ action: 'confirm' });
   return { confirmed: true };
 }
 
@@ -416,6 +425,7 @@ async function promoteNext(client, tripId) {
     [tripId, head.user_id, status, confirmedAt],
   );
   await client.query('UPDATE bus_waitlist SET promoted_at = NOW() WHERE id = $1', [head.id]);
+  waitlistPromotions.inc({ vertical: 'bus' });
   return { userId: head.user_id, email: head.email, name: head.name, status, trip: trips[0] };
 }
 

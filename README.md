@@ -248,6 +248,41 @@ node backend/src/scripts/_verify_s7.js   # recommender heuristic + Gemini fallba
 node frontend/_verify_s6.mjs             # WebSocket cross-node fan-out (needs EVENT_ID/SEAT_ID/TOKEN)
 ```
 
+## Observability
+
+```bash
+docker compose --profile monitoring up -d     # adds Prometheus (:9090) + Grafana (:3005)
+```
+Every api node and the worker expose Prometheus metrics at `/metrics`: request rate + p95 by
+route (`http_request_duration_seconds`), hold→confirm conversion (`seat_holds_total`,
+`seat_confirms_total`), bus actions (`bus_bookings_total{action}`), waitlist promotions by
+vertical, live socket count (`socketio_connected`), and BullMQ queue depths (`bullmq_jobs
+{queue,state}`). Grafana auto-provisions the **SeatLive — Platform Ops** dashboard (anonymous
+viewer enabled; admin/admin to edit). Every response carries an `X-Request-Id` for log correlation.
+
+## Scaling analysis (and what's already fixed)
+
+| Bottleneck | Status |
+|---|---|
+| `ip_hash` WS stickiness collapses under campus NAT (shared public IPs) | **Fixed** — websocket-only transport + `@socket.io/redis-adapter` (cluster-wide rooms) + `@socket.io/redis-emitter` (worker emits without an `io`); `/ws` is now `least_conn` |
+| Hand-rolled pub/sub bridge did O(nodes×messages) work | **Fixed** — single emit through the adapter, delivered once |
+| Retried `POST /bookings/confirm` could double-insert a payment | **Fixed** — `Idempotency-Key` middleware (stored-response replay) + partial unique index on `payments(reservation_id)` |
+| Replica lag could show users stale *own* state | **Fixed** — `ryw:{user}` flag pins a user's scoped reads to the primary for 10 s after any write |
+| N instances × pool = connection explosion on the primary | **Fixed** — PgBouncer (transaction pooling) fronts all writes |
+| 903 KB initial JS bundle | **Fixed** — route-level code-split: main chunk 463 KB, recharts isolated to the dashboard chunk |
+| No metrics | **Fixed** — see Observability above |
+
+**Capacity math.** A 10k-seat on-sale ≈ 330 Lua ops/s (Redis headroom ~100k/s) + 330 reservation
+inserts/s (comfortable for one primary behind PgBouncer). The campus-bus burst is ~50 writes/s on
+one 40-seat counter row — negligible. First real walls at ~100×: WS connection count (scale api
+nodes horizontally; adapter already in place), Redis as a shared dependency (split locks/queues/
+pub-sub or Sentinel), table growth (date-partition `bus_trips`/`bus_bookings`), and the
+`events.available_seats` hot row (derive it or move the decrement async).
+
+**Remaining roadmap:** k6 load-proof pack (seat-race: exactly 1 winner of 500 VUs), chaos demos
+(kill Redis mid-flow → PG fallback; kill worker → boot self-heal), Vitest+supertest CI with badge,
+Redis Sentinel, table partitioning, live deploy.
+
 ## Troubleshooting
 
 - **502 from nginx after `--build`** → app containers got new IPs; `docker compose restart nginx`.

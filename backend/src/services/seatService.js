@@ -9,6 +9,7 @@ import { scheduleExpiry, cancelExpiry } from '../config/queues.js';
 import { publishSeatUpdate, markUserWrite } from './cacheService.js';
 import { logger } from '../utils/logger.js';
 import { AppError, Errors } from '../utils/errors.js';
+import { seatHolds } from '../config/metrics.js';
 
 const HOLD_TTL = config.holdTtlSeconds; // seconds (480)
 const RL_MAX = config.rateLimit.holds; // 3
@@ -72,6 +73,7 @@ export async function holdSeat({ userId, seatId, eventId }) {
     await publishSeatUpdate({ eventId, seatId, status: 'held', userId });
 
     logger.info(`[hold] seat=${seatId} user=${userId} token=${holdToken} (redis)`);
+    seatHolds.inc({ path: 'redis' });
     markUserWrite(userId).catch(() => {});
     return { holdToken, expiresAt: expiresAt.toISOString(), ttl: HOLD_TTL };
   }
@@ -91,6 +93,7 @@ async function holdSeatViaPostgres({ userId, seatId, eventId, holdToken, expires
     await insertHeldReservation(client, { seatId, userId, eventId, holdToken, expiresAt });
 
     logger.info(`[hold] seat=${seatId} user=${userId} token=${holdToken} (postgres-fallback)`);
+    seatHolds.inc({ path: 'pg_fallback' });
     // Best-effort live update (publisher may be down too).
     publishSeatUpdate({ eventId, seatId, status: 'held', userId }).catch(() => {});
     return { holdToken, expiresAt: expiresAt.toISOString(), ttl: HOLD_TTL, fallback: true };

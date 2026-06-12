@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import { publisher, subscriber } from './redis.js';
 import { config } from './env.js';
 import { logger } from '../utils/logger.js';
+import { socketsConnected } from './metrics.js';
 
 export function initSocket(httpServer) {
   const io = new Server(httpServer, {
@@ -17,6 +18,7 @@ export function initSocket(httpServer) {
   });
 
   io.on('connection', (socket) => {
+    socketsConnected.inc();
     logger.debug(`[ws] connect ${socket.id} on ${config.instanceId}`);
     // Tell the client which node it landed on (useful for debugging LB).
     socket.emit('connected', { instance: config.instanceId, socketId: socket.id });
@@ -54,7 +56,10 @@ export function initSocket(httpServer) {
       }
     });
 
-    socket.on('disconnect', () => logger.debug(`[ws] disconnect ${socket.id}`));
+    socket.on('disconnect', () => {
+      socketsConnected.dec();
+      logger.debug(`[ws] disconnect ${socket.id}`);
+    });
   });
 
   logger.info(`[ws] redis adapter active on ${config.instanceId}`);

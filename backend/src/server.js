@@ -3,7 +3,9 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import crypto from 'node:crypto';
 import http from 'node:http';
+import { httpMetrics, metricsHandler } from './config/metrics.js';
 import { config } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { isRedisReady } from './config/redis.js';
@@ -17,11 +19,18 @@ app.set('trust proxy', true); // honor X-Forwarded-* from nginx
 app.use(cors({ origin: config.clientUrls, credentials: true }));
 app.use(express.json());
 app.use(cookieParser()); // refresh-token cookie on /api/auth/*
-// Surface which instance served the request (handy for verifying load balancing).
-app.use((_req, res, next) => {
+// Surface which instance served the request (handy for verifying load balancing)
+// + a request id for log correlation across services.
+app.use((req, res, next) => {
+  req.id = req.headers['x-request-id'] || crypto.randomUUID();
+  res.setHeader('X-Request-Id', req.id);
   res.setHeader('X-Served-By', config.instanceId);
   next();
 });
+app.use(httpMetrics);
+
+// Prometheus scrape endpoint (reached over the docker network).
+app.get('/metrics', metricsHandler);
 
 // Liveness/readiness probe (used by docker + nginx healthchecks)
 app.get('/health', async (_req, res) => {

@@ -22,6 +22,6 @@ export function errorHandler(err, req, res, _next) {
   }
 
   // Unexpected: log the full error, return a generic message.
-  logger.error('[error] unhandled:', err);
+  logger.error(`[error] unhandled rid=${req.id || '-'}:`, err);
   return res.status(500).json({ error: { code: 'INTERNAL', message: 'Something went wrong' } });
 }

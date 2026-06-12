@@ -6,6 +6,7 @@ import { writePool } from '../config/db.js';
 import { QUEUE_NAMES, enqueueEmail } from '../config/queues.js';
 import { publishWaitlistNotify } from '../services/cacheService.js';
 import { logger } from '../utils/logger.js';
+import { waitlistPromotions } from '../config/metrics.js';
 
 export async function processWaitlistNotify(job) {
   const { eventId, userId, seatId } = job.data;
@@ -35,6 +36,7 @@ export async function processWaitlistNotify(job) {
     });
   }
 
+  waitlistPromotions.inc({ vertical: 'events' });
   logger.info(`[waitlist] notified user=${userId} event=${eventId} seat=${seatId}`);
   return { notified: userId };
 }

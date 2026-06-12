@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: api
+    static_configs:
+      - targets: ['node_app_1:3000', 'node_app_2:3001']
+  - job_name: worker
+    static_configs:
+      - targets: ['bullmq_worker:3002']
