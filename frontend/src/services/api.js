@@ -121,6 +121,9 @@ export const busAdminAddHoliday = (p) => api.post('/bus/admin/holidays', p).then
 export const busAdminRemoveHoliday = (day) => api.delete(`/bus/admin/holidays/${day}`).then((r) => r.data);
 export const busAdminManifest = (id) => api.get(`/bus/admin/trips/${id}/manifest`).then((r) => r.data);
 export const busAdminGenerate = (date) => api.post('/bus/admin/generate', date ? { date } : {}).then((r) => r.data);
+export const busAdminFlags = () => api.get('/bus/admin/flags').then((r) => r.data.flags);
+export const busAdminAnalyzeFlags = () => api.post('/bus/admin/flags/analyze').then((r) => r.data);
+export const busAdminCapacityAdvice = () => api.get('/bus/admin/capacity-advice').then((r) => r.data);
 
 // ── Admin ──
 export const adminOverview = () => api.get('/admin/overview').then((r) => r.data);

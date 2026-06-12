@@ -3,6 +3,7 @@ import { writePool, readPool } from '../config/db.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { Errors } from '../utils/errors.js';
 import { generateTripsForDate } from '../services/busService.js';
+import { analyzeRiders, listFlags, adviseCapacity } from '../services/busInsightsService.js';
 
 export const listSchedules = asyncHandler(async (_req, res) => {
   const { rows } = await readPool.query(
@@ -98,4 +99,17 @@ export const regenerate = asyncHandler(async (req, res) => {
   const date = req.body.date || new Date().toISOString().slice(0, 10);
   const created = await generateTripsForDate(date);
   res.json({ date, created });
+});
+
+// ── AI ops insights ──
+export const riderFlags = asyncHandler(async (_req, res) => {
+  res.json({ flags: await listFlags() });
+});
+
+export const runRiderAnalysis = asyncHandler(async (_req, res) => {
+  res.json(await analyzeRiders());
+});
+
+export const capacityAdvice = asyncHandler(async (_req, res) => {
+  res.json(await adviseCapacity());
 });

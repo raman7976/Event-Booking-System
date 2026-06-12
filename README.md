@@ -216,6 +216,22 @@ together, and `UNIQUE(trip_id, user_id)` + `FOR UPDATE SKIP LOCKED` (waitlist pr
 over-booking and queue-jumping impossible. Rule of thumb: per-resource locks + TTL ⇒ Redis;
 transactional counters with relational invariants ⇒ Postgres.
 
+## AI ops insights (bus vertical)
+
+Two admin-side analyses at `/admin/bus`, both Gemini-powered with a deterministic heuristic
+fallback (work fully without an API key):
+
+- **Rider reliability flags** — flags riders who book seats but don't board. SQL aggregates each
+  rider's last-30-day outcomes (misses = `no_show` + `auto_released`, miss rate, recent pattern,
+  and *blocked waiters* — misses on trips where others were waitlisted); Gemini assigns a risk
+  tier (low/medium/high) with a written rationale and a suggested action (none/warn/cooldown).
+  Flags are **advisory** — persisted in `bus_rider_flags`, each run replaces the last, admins
+  decide. Privacy: only roll numbers + aggregate counts are sent to the model.
+- **Capacity advisor** — per-timetable-row demand over recent departed trips (avg fill,
+  waitlist pressure, minutes-to-full from booking timestamps) → recommends
+  increase/decrease/keep with a suggested capacity, and a **one-click Apply** writes it back to
+  the timetable.
+
 ## AI: Smart Seat Recommender
 
 `POST /api/seats/recommend` reads available seats from the **replica**, sends them

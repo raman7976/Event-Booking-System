@@ -14,6 +14,7 @@ import {
 import {
   listSchedules, createSchedule, updateSchedule, deleteSchedule,
   listHolidays, addHoliday, removeHoliday, tripManifest, regenerate,
+  riderFlags, runRiderAnalysis, capacityAdvice,
 } from '../controllers/busAdminController.js';
 
 const router = Router();
@@ -71,5 +72,10 @@ router.post('/admin/holidays', ...admin, validate(holidaySchema), addHoliday);
 router.delete('/admin/holidays/:day', ...admin, validate(dayParam, 'params'), removeHoliday);
 router.get('/admin/trips/:id/manifest', ...admin, validate(idParam, 'params'), tripManifest);
 router.post('/admin/generate', ...admin, validate(generateSchema), regenerate);
+
+// AI ops insights (advisory; Gemini with heuristic fallback)
+router.get('/admin/flags', ...admin, riderFlags);
+router.post('/admin/flags/analyze', ...admin, runRiderAnalysis);
+router.get('/admin/capacity-advice', ...admin, capacityAdvice);
 
 export default router;

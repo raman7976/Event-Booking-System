@@ -8,12 +8,210 @@ import {
   busAdminSchedules, busAdminCreateSchedule, busAdminUpdateSchedule, busAdminDeleteSchedule,
   busAdminHolidays, busAdminAddHoliday, busAdminRemoveHoliday,
   busAdminManifest, busAdminGenerate, busSchedule, apiError,
+  busAdminFlags, busAdminAnalyzeFlags, busAdminCapacityAdvice,
 } from '../services/api.js';
 import { useToast } from '../components/ui/Toast.jsx';
 import Icon from '../components/ui/Icon.jsx';
 
 const WD = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const hhmm = (t) => t?.slice(0, 5);
+
+const TIER_CHIP = {
+  high: 'border-rose-200 bg-rose-50 text-rose-700',
+  medium: 'border-amber-200 bg-amber-50 text-amber-700',
+  low: 'border-slate-200 bg-slate-50 text-slate-500',
+};
+const ACTION_LABEL = { none: 'no action', warn: 'send warning', cooldown: 'booking cooldown' };
+const REC_CHIP = {
+  increase: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  decrease: 'border-amber-200 bg-amber-50 text-amber-700',
+  keep: 'border-slate-200 bg-slate-50 text-slate-500',
+};
+
+const SourceChip = ({ source, model }) => (
+  <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700">
+    {source}{model ? ` · ${model}` : ''}
+  </span>
+);
+
+// AI ops: rider reliability flags ("books but doesn't board")
+function RiderFlagsCard() {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const { data: flags = [] } = useQuery({ queryKey: ['bus-rider-flags'], queryFn: busAdminFlags });
+  const analyze = useMutation({
+    mutationFn: busAdminAnalyzeFlags,
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['bus-rider-flags'] });
+      toast.push(
+        r.flags.length
+          ? `Analyzed riders — ${r.flags.length} flagged (${r.source}).`
+          : 'No riders meet the flagging threshold.',
+        'success',
+      );
+    },
+    onError: (err) => toast.push(apiError(err), 'error', 6000),
+  });
+  const src = flags[0];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}
+      className={`glass relative overflow-hidden p-5 ${analyze.isPending ? 'ring-2 ring-violet-300/70' : ''}`}
+    >
+      {analyze.isPending && (
+        <motion.div
+          className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-violet-500 via-fuchsia-400 to-blue-400"
+          animate={{ x: ['-100%', '100%'] }}
+          transition={{ repeat: Infinity, duration: 1.1, ease: 'linear' }}
+        />
+      )}
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50">
+            <Icon name="sparkles" size={17} className="text-violet-600" />
+          </span>
+          <div>
+            <h2 className="font-display font-bold text-slate-900">Rider reliability</h2>
+            <p className="text-[11px] text-slate-400">flags riders who book seats but don&apos;t board · advisory only</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {src && <SourceChip source={src.source} model={src.model} />}
+          <button
+            type="button" onClick={() => analyze.mutate()} disabled={analyze.isPending}
+            className="btn-primary !py-1.5 text-xs"
+          >
+            {analyze.isPending ? 'Analyzing…' : 'Analyze riders'}
+          </button>
+        </div>
+      </div>
+
+      {flags.length === 0 ? (
+        <p className="mt-3 text-sm text-slate-400">
+          No flags yet — run an analysis. Riders with ≥3 bookings and ≥1 miss in the last 30 days are scored.
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2.5">
+          {flags.map((f) => (
+            <li key={f.userId} className="rounded-xl border border-slate-100 bg-white p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-xs font-bold text-slate-700">{f.rollNumber || '—'}</span>
+                <span className="text-sm font-medium text-slate-900">{f.name}</span>
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${TIER_CHIP[f.tier]}`}>
+                  {f.tier} risk
+                </span>
+                <span className="ml-auto rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                  {ACTION_LABEL[f.action]}
+                </span>
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] font-semibold text-slate-500">
+                <span className="chip !px-2 !py-0.5">{f.stats.total} booked</span>
+                <span className="chip !px-2 !py-0.5 !text-rose-600">{f.stats.misses} missed</span>
+                {f.stats.blockedWaiters > 0 && (
+                  <span className="chip !px-2 !py-0.5 !text-amber-700">{f.stats.blockedWaiters} blocked waiters</span>
+                )}
+                <span className="chip !px-2 !py-0.5">{Math.round((f.stats.missRate || 0) * 100)}% miss rate</span>
+              </div>
+              <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{f.rationale}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </motion.div>
+  );
+}
+
+// AI ops: per-route capacity recommendations with one-click apply.
+function CapacityAdvisorCard({ onApply, busyId }) {
+  const toast = useToast();
+  const [result, setResult] = useState(null);
+  const advise = useMutation({
+    mutationFn: busAdminCapacityAdvice,
+    onSuccess: (r) => {
+      setResult(r);
+      toast.push(r.advice.length ? `Advice ready for ${r.advice.length} route(s) (${r.source}).` : 'No departed trips to analyze yet.', 'success');
+    },
+    onError: (err) => toast.push(apiError(err), 'error', 6000),
+  });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
+      className={`glass relative overflow-hidden p-5 ${advise.isPending ? 'ring-2 ring-violet-300/70' : ''}`}
+    >
+      {advise.isPending && (
+        <motion.div
+          className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-violet-500 via-fuchsia-400 to-blue-400"
+          animate={{ x: ['-100%', '100%'] }}
+          transition={{ repeat: Infinity, duration: 1.1, ease: 'linear' }}
+        />
+      )}
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50">
+            <Icon name="chart" size={17} className="text-violet-600" />
+          </span>
+          <div>
+            <h2 className="font-display font-bold text-slate-900">Capacity advisor</h2>
+            <p className="text-[11px] text-slate-400">demand analysis over recent trips · apply suggestions in one click</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {result && <SourceChip source={result.source} model={result.model} />}
+          <button
+            type="button" onClick={() => advise.mutate()} disabled={advise.isPending}
+            className="btn-primary !py-1.5 text-xs"
+          >
+            {advise.isPending ? 'Analyzing…' : 'Get advice'}
+          </button>
+        </div>
+      </div>
+
+      {!result ? (
+        <p className="mt-3 text-sm text-slate-400">
+          Analyzes fill rates, waitlist pressure and time-to-full across departed trips, per timetable row.
+        </p>
+      ) : result.advice.length === 0 ? (
+        <p className="mt-3 text-sm text-slate-400">No departed trips in the window yet.</p>
+      ) : (
+        <ul className="mt-3 space-y-2.5">
+          {result.advice.map((a) => (
+            <li key={a.scheduleId} className="rounded-xl border border-slate-100 bg-white p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-display text-sm font-bold text-slate-900">
+                  Bus {a.busNo} · {a.departureTime}
+                </span>
+                <span className="text-xs text-slate-500">{a.origin} → {a.destination}</span>
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${REC_CHIP[a.recommendation]}`}>
+                  {a.recommendation}
+                </span>
+                {a.recommendation !== 'keep' && a.suggestedCapacity && a.suggestedCapacity !== a.capacity && (
+                  <button
+                    type="button"
+                    disabled={busyId === a.scheduleId}
+                    onClick={() => onApply(a.scheduleId, a.suggestedCapacity)}
+                    className="ml-auto btn-ghost !rounded-lg !px-2.5 !py-1 text-[11px]"
+                  >
+                    {busyId === a.scheduleId ? 'Applying…' : `Apply ${a.capacity} → ${a.suggestedCapacity}`}
+                  </button>
+                )}
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] font-semibold text-slate-500">
+                <span className="chip !px-2 !py-0.5">{a.trips} trips</span>
+                <span className="chip !px-2 !py-0.5">{Math.round((a.avgFill || 0) * 100)}% avg fill</span>
+                <span className="chip !px-2 !py-0.5">peak {a.peakBooked}/{a.capacity}</span>
+                {a.avgWaitlist > 0 && <span className="chip !px-2 !py-0.5 !text-amber-700">~{a.avgWaitlist} waiting</span>}
+                {a.avgMinutesToFull != null && <span className="chip !px-2 !py-0.5">full in ~{Math.round(a.avgMinutesToFull)}m</span>}
+              </div>
+              <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{a.reason}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </motion.div>
+  );
+}
 
 function ScheduleTable({ rows, onPatch, onDelete, busyId }) {
   return (
@@ -39,6 +237,7 @@ function ScheduleTable({ rows, onPatch, onDelete, busyId }) {
             </td>
             <td className="py-2.5 pr-2">
               <input
+                key={`${s.id}-${s.capacity}`} // remount when capacity changes elsewhere (uncontrolled input)
                 type="number" min="1" max="100" defaultValue={s.capacity}
                 onBlur={(e) => Number(e.target.value) !== s.capacity && onPatch(s.id, { capacity: Number(e.target.value) })}
                 className="input-field !w-16 !px-2 !py-1 text-xs"
@@ -276,6 +475,12 @@ export default function BusAdminPage() {
           </div>
         )}
       </motion.div>
+
+      {/* AI ops insights */}
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
+        <RiderFlagsCard />
+        <CapacityAdvisorCard onApply={(id, capacity) => patch(id, { capacity })} busyId={busyId} />
+      </div>
     </div>
   );
 }
