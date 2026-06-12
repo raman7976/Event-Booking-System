@@ -81,8 +81,17 @@ export const releaseHold = (seatId, holdToken) =>
 export const recommend = (payload) => api.post('/seats/recommend', payload).then((r) => r.data);
 
 // ── Bookings ──
+// A fresh Idempotency-Key per confirm attempt: axios auto-retries (e.g. the
+// silent token refresh) reuse the same request config — and therefore the same
+// key — so a lost response can never double-charge a hold.
 export const confirmBooking = (holdToken, paymentMethod) =>
-  api.post('/bookings/confirm', { holdToken, paymentMethod }).then((r) => r.data.booking);
+  api
+    .post(
+      '/bookings/confirm',
+      { holdToken, paymentMethod },
+      { headers: { 'Idempotency-Key': crypto.randomUUID() } },
+    )
+    .then((r) => r.data.booking);
 export const myBookings = () => api.get('/bookings/mine').then((r) => r.data.bookings);
 
 // ── Waitlist ──

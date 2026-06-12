@@ -1,20 +1,23 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Link, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from './hooks/useAuth.js';
 import { ToastProvider } from './components/ui/Toast.jsx';
 import EventsListPage from './pages/EventsListPage.jsx';
-import EventPage from './pages/EventPage.jsx';
-import ConfirmationPage from './pages/ConfirmationPage.jsx';
-import DashboardPage from './pages/DashboardPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
-import AdminPage from './pages/AdminPage.jsx';
-import MyBookingsPage from './pages/MyBookingsPage.jsx';
-import BusSchedulePage from './pages/BusSchedulePage.jsx';
-import BusTripPage from './pages/BusTripPage.jsx';
-import BusAdminPage from './pages/BusAdminPage.jsx';
 import Icon from './components/ui/Icon.jsx';
+
+// Route-level code-splitting: heavy pages (recharts dashboards, admin tooling,
+// the booking flows) load on demand so the landing chunk stays small.
+const EventPage = lazy(() => import('./pages/EventPage.jsx'));
+const ConfirmationPage = lazy(() => import('./pages/ConfirmationPage.jsx'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
+const AdminPage = lazy(() => import('./pages/AdminPage.jsx'));
+const MyBookingsPage = lazy(() => import('./pages/MyBookingsPage.jsx'));
+const BusSchedulePage = lazy(() => import('./pages/BusSchedulePage.jsx'));
+const BusTripPage = lazy(() => import('./pages/BusTripPage.jsx'));
+const BusAdminPage = lazy(() => import('./pages/BusAdminPage.jsx'));
 
 function PageSpinner() {
   return (
@@ -193,6 +196,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
           >
+            <Suspense fallback={<PageSpinner />}>
             <Routes>
               <Route path="/" element={<EventsListPage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -207,6 +211,7 @@ export default function App() {
               <Route path="/events/:id/dashboard" element={<RequireAdmin><DashboardPage /></RequireAdmin>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </Suspense>
           </motion.div>
         </main>
         <Footer />

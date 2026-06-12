@@ -1,18 +1,19 @@
-// Socket.io server (path: /ws). Each node instance subscribes to the Redis
-// "seat-updates" / "waitlist-notify" channels and fans messages out to its local
-// rooms — so a change made on ANY node reaches every connected client.
+// Socket.io server (path: /ws) with the official Redis adapter: rooms are
+// cluster-wide, so an emit from any process (via lib/emitter.js) reaches every
+// member exactly once, on whichever node their socket lives. No sticky
+// load-balancing needed — clients connect websocket-only (no polling handshake).
 import { Server } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
 import jwt from 'jsonwebtoken';
-import { subscriber } from './redis.js';
+import { publisher, subscriber } from './redis.js';
 import { config } from './env.js';
 import { logger } from '../utils/logger.js';
-import { SEAT_UPDATES_CHANNEL, WAITLIST_NOTIFY_CHANNEL } from '../services/cacheService.js';
-import { TRIP_UPDATES_CHANNEL } from '../services/busService.js';
 
 export function initSocket(httpServer) {
   const io = new Server(httpServer, {
     path: '/ws',
     cors: { origin: config.clientUrls, credentials: true },
+    adapter: createAdapter(publisher, subscriber),
   });
 
   io.on('connection', (socket) => {
@@ -25,7 +26,6 @@ export function initSocket(httpServer) {
       socket.join(`event:${eventId}`);
       logger.debug(`[ws] ${socket.id} joined event:${eventId}`);
     });
-
     socket.on('leave-event', (eventId) => {
       if (eventId) socket.leave(`event:${eventId}`);
     });
@@ -57,30 +57,6 @@ export function initSocket(httpServer) {
     socket.on('disconnect', () => logger.debug(`[ws] disconnect ${socket.id}`));
   });
 
-  // ── Redis pub/sub -> local Socket.io rooms ──
-  subscriber.subscribe(SEAT_UPDATES_CHANNEL, WAITLIST_NOTIFY_CHANNEL, TRIP_UPDATES_CHANNEL, (err, count) => {
-    if (err) logger.error('[ws] subscribe failed:', err.message);
-    else logger.info(`[ws] subscribed to ${count} channel(s) on ${config.instanceId}`);
-  });
-
-  subscriber.on('message', (channel, message) => {
-    let data;
-    try {
-      data = JSON.parse(message);
-    } catch (err) {
-      logger.warn('[ws] bad pub/sub payload:', err.message);
-      return;
-    }
-    if (channel === SEAT_UPDATES_CHANNEL) {
-      const { eventId, seatId, status, timestamp } = data;
-      io.to(`event:${eventId}`).emit('seat-update', { seatId, status, timestamp });
-    } else if (channel === TRIP_UPDATES_CHANNEL) {
-      io.to(`trip:${data.tripId}`).to('bus:schedule').emit('trip-update', data);
-    } else if (channel === WAITLIST_NOTIFY_CHANNEL) {
-      const { eventId, userId, seatId, timestamp } = data;
-      io.to(`user:${userId}`).emit('waitlist-available', { eventId, seatId, timestamp });
-    }
-  });
-
+  logger.info(`[ws] redis adapter active on ${config.instanceId}`);
   return io;
 }

@@ -12,14 +12,12 @@
 //   scheduled --T-open--> open --T-confirm--> confirming --T-release--> (sweep)
 //   --departure--> departed
 import { config } from '../config/env.js';
-import { writePool, readPool, withTransaction } from '../config/db.js';
-import { publisher, isRedisReady } from '../config/redis.js';
+import { writePool, readPool, withTransaction, pickReadPool } from '../config/db.js';
 import { scheduleBusJob, enqueueEmail } from '../config/queues.js';
-import { publishWaitlistNotify } from './cacheService.js';
+import { publishWaitlistNotify, markUserWrite } from './cacheService.js';
+import { emitTripUpdate } from '../lib/emitter.js';
 import { logger } from '../utils/logger.js';
 import { Errors } from '../utils/errors.js';
-
-export const TRIP_UPDATES_CHANNEL = 'trip-updates';
 
 // ── time helpers ──
 export const tripTimes = (departureAt) => {
@@ -35,7 +33,7 @@ export const tripTimes = (departureAt) => {
 const tripLabel = (t) =>
   `Bus ${t.bus_no} · ${t.origin} → ${t.destination} · ${new Date(t.departure_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
-// ── live fan-out ──
+// ── live fan-out (Socket.IO redis-adapter via lib/emitter) ──
 export async function publishTripUpdate(tripId, client = null) {
   try {
     const q = client || writePool;
@@ -45,19 +43,16 @@ export async function publishTripUpdate(tripId, client = null) {
          FROM bus_trips t WHERE t.id = $1`,
       [tripId],
     );
-    if (!rows.length || !isRedisReady()) return;
+    if (!rows.length) return;
     const t = rows[0];
-    await publisher.publish(
-      TRIP_UPDATES_CHANNEL,
-      JSON.stringify({
-        tripId: t.id,
-        status: t.status,
-        booked: t.booked_count,
-        capacity: t.capacity,
-        waitlist: t.waitlist,
-        timestamp: Date.now(),
-      }),
-    );
+    emitTripUpdate({
+      tripId: t.id,
+      status: t.status,
+      booked: t.booked_count,
+      capacity: t.capacity,
+      waitlist: t.waitlist,
+      timestamp: Date.now(),
+    });
   } catch (err) {
     logger.warn('[bus] publishTripUpdate failed:', err.message);
   }
@@ -260,6 +255,7 @@ export async function bookSeat({ tripId, userId }) {
     if (!claimed) throw Errors.conflict('Bus is full — join the waitlist');
 
     publishTripUpdate(tripId).catch(() => {});
+    markUserWrite(userId).catch(() => {});
     return { bookingId: booking[0].id, status: booking[0].status, seatNumber: null };
   });
 }
@@ -291,6 +287,7 @@ async function freeSeat({ tripId, userId, newStatus }) {
   });
   await publishTripUpdate(tripId);
   await notifyPromotions(tripId, result.promotions);
+  markUserWrite(userId).catch(() => {});
   return { released: true, promoted: result.promotions.length };
 }
 
@@ -325,6 +322,7 @@ export async function confirmBoarding({ tripId, userId }) {
     throw Errors.notFound('No active seat on this trip');
   }
   await publishTripUpdate(tripId);
+  markUserWrite(userId).catch(() => {});
   return { confirmed: true };
 }
 
@@ -363,6 +361,7 @@ export async function joinBusWaitlist({ tripId, userId }) {
       [tripId, rows[0].id],
     );
     publishTripUpdate(tripId).catch(() => {});
+    markUserWrite(userId).catch(() => {});
     return { joined: true, position: pos[0].position };
   });
 }
@@ -374,6 +373,7 @@ export async function leaveBusWaitlist({ tripId, userId }) {
   );
   if (!rowCount) throw Errors.notFound('Not on this waitlist');
   await publishTripUpdate(tripId);
+  markUserWrite(userId).catch(() => {});
   return { left: true };
 }
 
@@ -434,7 +434,8 @@ async function notifyPromotions(tripId, promotions) {
 
 // ── reads ──
 export async function getSchedule(dateStr, userId = null) {
-  const { rows } = await readPool.query(
+  const pool = await pickReadPool(userId);
+  const { rows } = await pool.query(
     `SELECT t.id, t.service_date, t.departure_at, t.capacity, t.booked_count, t.status,
             s.bus_no, s.origin, s.destination,
             (SELECT COUNT(*)::int FROM bus_waitlist w WHERE w.trip_id = t.id AND w.promoted_at IS NULL) AS waitlist_count,
@@ -467,7 +468,8 @@ export async function getSchedule(dateStr, userId = null) {
 }
 
 export async function getTripDetail(tripId, userId = null) {
-  const { rows } = await readPool.query(
+  const pool = await pickReadPool(userId);
+  const { rows } = await pool.query(
     `SELECT t.*, s.bus_no, s.origin, s.destination
        FROM bus_trips t JOIN bus_schedules s ON s.id = t.schedule_id
       WHERE t.id = $1`,
@@ -477,7 +479,7 @@ export async function getTripDetail(tripId, userId = null) {
   const t = rows[0];
 
   // The waitlist is public by design: name + roll + position.
-  const { rows: waitlist } = await readPool.query(
+  const { rows: waitlist } = await pool.query(
     `SELECT u.name, u.roll_number, w.user_id, w.joined_at
        FROM bus_waitlist w JOIN users u ON u.id = w.user_id
       WHERE w.trip_id = $1 AND w.promoted_at IS NULL
@@ -487,7 +489,7 @@ export async function getTripDetail(tripId, userId = null) {
 
   let myBooking = null;
   if (userId) {
-    const { rows: mine } = await readPool.query(
+    const { rows: mine } = await pool.query(
       'SELECT status, confirmed_at FROM bus_bookings WHERE trip_id = $1 AND user_id = $2',
       [tripId, userId],
     );
@@ -516,7 +518,8 @@ export async function getTripDetail(tripId, userId = null) {
 }
 
 export async function getMyBusTrips(userId) {
-  const { rows } = await readPool.query(
+  const pool = await pickReadPool(userId);
+  const { rows } = await pool.query(
     `SELECT t.id AS trip_id, t.departure_at, t.status AS trip_status, t.booked_count, t.capacity,
             s.bus_no, s.origin, s.destination,
             b.status AS booking_status, b.confirmed_at,

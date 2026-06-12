@@ -38,6 +38,23 @@ readPool.on('error', (err) => logger.error('[db] readPool idle error:', err.mess
 export const query = (text, params) => writePool.query(text, params);
 export const readQuery = (text, params) => readPool.query(text, params);
 
+/**
+ * Read-your-writes pool selection: user-scoped reads go to the PRIMARY for a
+ * short window after that user wrote (flag set via cacheService.markUserWrite),
+ * so replica lag can never show someone stale own-state. Falls back to the
+ * replica when Redis is unavailable (availability over freshness).
+ */
+export async function pickReadPool(userId) {
+  if (!userId) return readPool;
+  try {
+    const { redis, isRedisReady } = await import('./redis.js');
+    if (!isRedisReady()) return readPool;
+    return (await redis.exists(`ryw:${userId}`)) ? writePool : readPool;
+  } catch {
+    return readPool;
+  }
+}
+
 /** Run `fn(client)` inside a BEGIN/COMMIT on the PRIMARY; auto ROLLBACK on throw. */
 export async function withTransaction(fn) {
   const client = await writePool.connect();

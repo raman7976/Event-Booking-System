@@ -5,7 +5,7 @@ import { AppError, Errors } from '../utils/errors.js';
 import { writePool, withTransaction } from '../config/db.js';
 import { redis, isRedisReady } from '../config/redis.js';
 import { cancelExpiry, enqueueEmail } from '../config/queues.js';
-import { publishSeatUpdate } from '../services/cacheService.js';
+import { publishSeatUpdate, markUserWrite } from '../services/cacheService.js';
 import { logger } from '../utils/logger.js';
 
 export const confirm = asyncHandler(async (req, res) => {
@@ -86,6 +86,7 @@ export const confirm = asyncHandler(async (req, res) => {
     transactionId,
   }).catch((err) => logger.warn('[confirm] email enqueue failed:', err.message));
   await publishSeatUpdate({ eventId: r.event_id, seatId: r.seat_id, status: 'booked' });
+  markUserWrite(userId).catch(() => {});
 
   res.status(201).json({
     booking: {

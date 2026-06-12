@@ -15,8 +15,10 @@ x-app-env: &app-env
   ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
   REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
   COOKIE_SECURE: ${COOKIE_SECURE:-false}
-  PG_PRIMARY_HOST: postgres_primary
-  PG_PRIMARY_PORT: 5432
+  # Writes go through PgBouncer (transaction pooling): N app instances × pool
+  # no longer multiply into N×pool real PG connections on the primary.
+  PG_PRIMARY_HOST: ${PG_PRIMARY_HOST_OVERRIDE:-pgbouncer}
+  PG_PRIMARY_PORT: ${PG_PRIMARY_PORT_OVERRIDE:-6432}
   PG_REPLICA_HOST: postgres_replica
   PG_REPLICA_PORT: 5432
   PG_DATABASE: ${PG_DATABASE:-booking}
@@ -94,6 +96,37 @@ services:
       timeout: 5s
       retries: 15
 
+  # ─── PgBouncer — connection pooler in front of the PRIMARY (writes) ───────
+  pgbouncer:
+    image: pgbouncer/pgbouncer:latest
+    depends_on:
+      postgres_primary:
+        condition: service_healthy
+    environment:
+      DATABASES_HOST: postgres_primary
+      DATABASES_PORT: "5432"
+      DATABASES_USER: ${PG_USER:-booking}
+      DATABASES_PASSWORD: ${PG_PASSWORD:-booking_pass}
+      DATABASES_DBNAME: ${PG_DATABASE:-booking}
+      PGBOUNCER_LISTEN_PORT: "6432"
+      PGBOUNCER_POOL_MODE: transaction
+      PGBOUNCER_MAX_CLIENT_CONN: "200"
+      PGBOUNCER_DEFAULT_POOL_SIZE: "20"
+      PGBOUNCER_AUTH_TYPE: scram-sha-256
+      PGBOUNCER_AUTH_FILE: /etc/pgbouncer/userlist.txt
+    volumes:
+      # plaintext secrets are valid for scram auth_type; edit alongside PG_PASSWORD
+      - ./docker/pgbouncer-userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    networks:
+      - booking_net
+    healthcheck:
+      # image ships no psql — TCP-open check; the app /health probes the full
+      # SELECT-1 path through pgbouncer anyway.
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 6432 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
   # ─── PostgreSQL 15 — REPLICA (reads, streaming replication) ───────────────
   postgres_replica:
     image: postgres:15
@@ -137,6 +170,8 @@ services:
         condition: service_healthy
       postgres_replica:
         condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
     networks:
       - booking_net
     restart: unless-stopped
@@ -162,6 +197,8 @@ services:
         condition: service_healthy
       postgres_replica:
         condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
     networks:
       - booking_net
     restart: unless-stopped
@@ -185,6 +222,8 @@ services:
       redis:
         condition: service_healthy
       postgres_primary:
+        condition: service_healthy
+      pgbouncer:
         condition: service_healthy
     networks:
       - booking_net

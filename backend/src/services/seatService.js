@@ -4,9 +4,9 @@
 import crypto from 'node:crypto';
 import { config } from '../config/env.js';
 import { redis, isRedisReady } from '../config/redis.js';
-import { writePool, readPool, withTransaction } from '../config/db.js';
+import { writePool, readPool, withTransaction, pickReadPool } from '../config/db.js';
 import { scheduleExpiry, cancelExpiry } from '../config/queues.js';
-import { publishSeatUpdate } from './cacheService.js';
+import { publishSeatUpdate, markUserWrite } from './cacheService.js';
 import { logger } from '../utils/logger.js';
 import { AppError, Errors } from '../utils/errors.js';
 
@@ -72,6 +72,7 @@ export async function holdSeat({ userId, seatId, eventId }) {
     await publishSeatUpdate({ eventId, seatId, status: 'held', userId });
 
     logger.info(`[hold] seat=${seatId} user=${userId} token=${holdToken} (redis)`);
+    markUserWrite(userId).catch(() => {});
     return { holdToken, expiresAt: expiresAt.toISOString(), ttl: HOLD_TTL };
   }
 
@@ -135,6 +136,7 @@ export async function releaseHold({ userId, holdToken }) {
   }
   await cancelExpiry(holdToken);
   await publishSeatUpdate({ eventId: r.event_id, seatId: r.seat_id, status: 'available' });
+  markUserWrite(userId).catch(() => {});
   return { released: true };
 }
 
@@ -149,7 +151,8 @@ export async function getSeatById(seatId) {
  * Base status comes from the replica; Redis hold keys overlay "held" + heldByMe.
  */
 export async function getEventSeats(eventId, userId = null) {
-  const { rows } = await readPool.query(
+  const pool = await pickReadPool(userId);
+  const { rows } = await pool.query(
     `SELECT id, row_label, seat_number, category, price, status, version
        FROM seats WHERE event_id = $1
        ORDER BY row_label, seat_number`,

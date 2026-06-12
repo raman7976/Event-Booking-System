@@ -1,10 +1,9 @@
-// Redis-backed seat snapshot + the pub/sub fan-out used for live updates.
-// (The AI Smart Seat Recommender is added to this service in a later section.)
-import { publisher, redis, isRedisReady } from '../config/redis.js';
+// Redis-backed seat snapshot + realtime emit helpers (events vertical) and the
+// read-your-writes flag shared by both verticals.
+import { redis, isRedisReady } from '../config/redis.js';
+import { emitSeatUpdate, emitWaitlistNotify } from '../lib/emitter.js';
 import { logger } from '../utils/logger.js';
 
-export const SEAT_UPDATES_CHANNEL = 'seat-updates';
-export const WAITLIST_NOTIFY_CHANNEL = 'waitlist-notify';
 const snapshotKey = (eventId) => `event:${eventId}:seats`;
 
 /** Maintain the per-event seat snapshot hash: field=seatId value=available|held|booked */
@@ -28,34 +27,31 @@ export async function getSeatSnapshot(eventId) {
 }
 
 /**
- * Update the snapshot hash AND publish to the "seat-updates" channel so every
- * node instance can fan the change out to its WebSocket room. Best-effort: a
- * Redis outage is logged, never thrown (the caller already persisted to PG).
+ * Update the snapshot hash AND emit the live update through the Socket.IO
+ * redis-adapter (delivered once, cluster-wide). Best-effort: a Redis outage is
+ * logged, never thrown (the caller already persisted to PG).
  */
 export async function publishSeatUpdate({ eventId, seatId, status, userId = null }) {
   await setSeatStatus(eventId, seatId, status);
-  if (!isRedisReady()) {
-    logger.warn('[cache] publishSeatUpdate skipped — redis down');
-    return;
-  }
-  const payload = JSON.stringify({ eventId, seatId, status, userId, timestamp: Date.now() });
-  try {
-    await publisher.publish(SEAT_UPDATES_CHANNEL, payload);
-  } catch (err) {
-    logger.warn('[cache] publish failed:', err.message);
-  }
+  emitSeatUpdate(eventId, { seatId, status, timestamp: Date.now() });
+  void userId;
 }
 
-/** Tell a specific user (via the node instances) that a seat opened up for them. */
+/** Tell a specific user (whichever node holds their socket) a seat opened up. */
 export async function publishWaitlistNotify({ eventId, userId, seatId = null }) {
-  if (!isRedisReady()) {
-    logger.warn('[cache] publishWaitlistNotify skipped — redis down');
-    return;
-  }
-  const payload = JSON.stringify({ eventId, userId, seatId, timestamp: Date.now() });
+  emitWaitlistNotify(userId, { eventId, seatId, timestamp: Date.now() });
+}
+
+/**
+ * Read-your-writes: stamp the user after any booking-state mutation; for the
+ * next few seconds their user-scoped reads are served from the primary so a
+ * lagging replica can never show them stale own-state.
+ */
+export async function markUserWrite(userId) {
+  if (!userId || !isRedisReady()) return;
   try {
-    await publisher.publish(WAITLIST_NOTIFY_CHANNEL, payload);
-  } catch (err) {
-    logger.warn('[cache] publishWaitlistNotify failed:', err.message);
+    await redis.set(`ryw:${userId}`, '1', 'EX', 10);
+  } catch {
+    /* best effort */
   }
 }
