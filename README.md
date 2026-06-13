@@ -249,9 +249,8 @@ and one-click holds the recommended seats atomically.
 ## Project structure
 
 ```
-backend/   src/{config,routes,controllers,services,workers,middleware,scripts}/  server.js
+backend/   src/{config,routes,controllers,services,workers,middleware,scripts}/  server.js  migrations/*.sql
 frontend/  src/{components,pages,hooks,services}/  App.jsx main.jsx  vite/tailwind config
-migrations/  001..006_*.sql
 nginx/nginx.conf   docker/  docker-compose.yml   .env.example
 ```
 

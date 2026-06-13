@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node src/server.js",
+    "start:web": "node src/scripts/migrate.js && node src/server.js",
     "dev": "nodemon src/server.js",
     "worker": "node src/workers/index.js",
     "worker:dev": "nodemon src/workers/index.js",

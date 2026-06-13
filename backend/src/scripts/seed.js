@@ -2,6 +2,7 @@
 // maps. Resets all bookable data first so it's safe to re-run. Targets the PRIMARY.
 import bcrypt from 'bcryptjs';
 import { writePool, closePools } from '../config/db.js';
+import { config } from '../config/env.js';
 
 // layout: list of sections -> { rows: ['A','B'], cols: 10, category, price }
 const EVENTS = [
@@ -133,18 +134,18 @@ async function seed() {
     await client.query('DELETE FROM seats');
     await client.query('DELETE FROM events');
 
-    // Demo accounts:
-    //   user  -> demo@demo.local  / password123
-    //   admin -> admin@demo.local / Admin@1234
+    // Accounts:
+    //   demo user -> demo@demo.local / password123  (public demo login)
+    //   admin     -> ADMIN_EMAIL / ADMIN_PASSWORD   (env-driven; real secret in prod)
     const userHash = await bcrypt.hash('password123', 10);
-    const adminHash = await bcrypt.hash('Admin@1234', 10);
+    const adminHash = await bcrypt.hash(config.admin.password, 10);
     await client.query(
       `INSERT INTO users (email, password_hash, name, role)
        VALUES ('demo@demo.local', $1, 'Demo User', 'user'),
-              ('admin@demo.local', $2, 'Admin', 'admin')
+              ($2, $3, 'Admin', 'admin')
        ON CONFLICT (email) DO UPDATE
          SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role`,
-      [userHash, adminHash],
+      [userHash, config.admin.email, adminHash],
     );
 
     // Campus accounts for the bus vertical (@lnmiit.ac.in + roll numbers).
@@ -166,12 +167,13 @@ async function seed() {
     const busRows = await seedBusSchedules(client);
 
     await client.query('COMMIT');
+    const pwShown = config.admin.password === 'Admin@1234' ? 'Admin@1234' : '«from ADMIN_PASSWORD env»';
     console.log('[seed] done.');
     console.log('  user : demo@demo.local  / password123');
-    console.log('  admin: admin@demo.local / Admin@1234');
+    console.log(`  admin: ${config.admin.email} / ${pwShown}`);
     console.log('  campus user : 23ucs101@lnmiit.ac.in / Student@123 (roll 23UCS101)');
     console.log('  campus user : 23ucs102@lnmiit.ac.in / Student@123 (roll 23UCS102)');
-    console.log('  campus admin: admin@lnmiit.ac.in    / Admin@1234');
+    console.log(`  campus admin: admin@lnmiit.ac.in    / ${pwShown}`);
     console.log(`  • bus timetable — ${busRows} schedule rows (weekday + weekend/holiday)`);
     created.forEach((c) => console.log(`  • ${c.name} — ${c.seats} seats (id ${c.id})`));
   } catch (err) {

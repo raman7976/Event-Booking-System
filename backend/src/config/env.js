@@ -24,6 +24,16 @@ export const config = {
   },
   // Set COOKIE_SECURE=true when serving over HTTPS (refresh cookie gets Secure).
   cookieSecure: process.env.COOKIE_SECURE === 'true',
+  // Refresh-cookie SameSite. Same-origin deploy -> 'lax'. Split frontend/backend
+  // (e.g. Vercel + Railway) is cross-site, so the cookie must be 'none' (+Secure).
+  cookieSameSite: (process.env.COOKIE_SAMESITE || 'lax').toLowerCase(),
+
+  // First admin account created by the seed. Set ADMIN_PASSWORD to a real secret
+  // in production; the defaults are only for local demos.
+  admin: {
+    email: (process.env.ADMIN_EMAIL || 'admin@demo.local').toLowerCase(),
+    password: process.env.ADMIN_PASSWORD || 'Admin@1234',
+  },
 
   pg: {
     primaryHost: process.env.PG_PRIMARY_HOST || 'localhost',
@@ -36,6 +46,9 @@ export const config = {
   },
 
   redis: {
+    // Managed providers (Railway/Upstash) give one REDIS_URL (redis:// or rediss://
+    // with auth). If set it wins; otherwise fall back to discrete host/port for local.
+    url: process.env.REDIS_URL || '',
     host: process.env.REDIS_HOST || 'localhost',
     port: int(process.env.REDIS_PORT, 6379),
   },

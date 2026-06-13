@@ -4,7 +4,14 @@
 // refresh + retry (single-flight so parallel 401s share one refresh call).
 import axios from 'axios';
 
-export const api = axios.create({ baseURL: '/api' });
+// REST is always same-origin and proxied to the backend — Vite dev-proxy locally,
+// and a Vercel rewrite (/api/* -> Railway) in production. This keeps the refresh
+// cookie first-party (works in Safari/mobile) and reachable on mobile networks
+// that can't hit the Railway host directly. (The WebSocket can't be proxied, so
+// socket.js connects straight to VITE_API_URL.)
+export const API_BASE = '';
+
+export const api = axios.create({ baseURL: `${API_BASE}/api`, withCredentials: true });
 
 let accessToken = null;
 let sessionHandlers = {};
@@ -24,7 +31,7 @@ export function refreshSession() {
   refreshInFlight =
     refreshInFlight ||
     axios
-      .post('/api/auth/refresh')
+      .post(`${API_BASE}/api/auth/refresh`, null, { withCredentials: true })
       .then(({ data }) => {
         accessToken = data.token;
         sessionHandlers.onSession?.(data.user);

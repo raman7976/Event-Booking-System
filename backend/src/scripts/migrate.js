@@ -11,10 +11,10 @@ dotenv.config();
 const { Pool } = pg;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// migrations/ lives at the repo root (../../../ from backend/src/scripts/).
-// Overridable for containerized runs.
+// migrations/ ships inside the backend (../../ from backend/src/scripts/) so the
+// Docker image is self-contained. Overridable for other run contexts.
 const MIGRATIONS_DIR =
-  process.env.MIGRATIONS_DIR || path.resolve(__dirname, '../../../migrations');
+  process.env.MIGRATIONS_DIR || path.resolve(__dirname, '../../migrations');
 
 const pool = new Pool({
   host: process.env.PG_PRIMARY_HOST || 'localhost',

@@ -156,13 +156,17 @@ export async function clearLoginFailures(email) {
 
 // ── Refresh cookie helpers (httpOnly, path-scoped to the auth endpoints) ──
 export const REFRESH_COOKIE = 'refresh_token';
-const cookieOpts = () => ({
-  httpOnly: true,
-  sameSite: 'lax',
-  secure: config.cookieSecure,
-  path: '/api/auth',
-  maxAge: config.jwt.refreshTtlDays * 86400 * 1000,
-});
+const cookieOpts = () => {
+  const sameSite = config.cookieSameSite; // 'lax' (same-origin) | 'none' (cross-site)
+  return {
+    httpOnly: true,
+    sameSite,
+    // Browsers reject SameSite=None without Secure, so force it for cross-site.
+    secure: config.cookieSecure || sameSite === 'none',
+    path: '/api/auth',
+    maxAge: config.jwt.refreshTtlDays * 86400 * 1000,
+  };
+};
 
 export function setRefreshCookie(res, token) {
   if (token) res.cookie(REFRESH_COOKIE, token, cookieOpts());

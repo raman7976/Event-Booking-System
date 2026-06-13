@@ -7,26 +7,38 @@ import Redis from 'ioredis';
 import { config } from './env.js';
 import { logger } from '../utils/logger.js';
 
-const base = {
-  host: config.redis.host,
-  port: config.redis.port,
-  retryStrategy: (times) => Math.min(times * 200, 2000),
-};
+// Build ioredis options from either a managed REDIS_URL (Railway/Upstash) or
+// discrete host/port. `rediss://` enables TLS; Railway's private hostname
+// (*.railway.internal) is IPv6-only, so `family: 0` lets Node resolve it.
+function redisOptions(extra = {}) {
+  const retryStrategy = (times) => Math.min(times * 200, 2000);
+  if (config.redis.url) {
+    const u = new URL(config.redis.url);
+    return {
+      host: u.hostname,
+      port: Number(u.port || 6379),
+      username: u.username ? decodeURIComponent(u.username) : undefined,
+      password: u.password ? decodeURIComponent(u.password) : undefined,
+      tls: u.protocol === 'rediss:' ? {} : undefined,
+      family: u.hostname.endsWith('.railway.internal') ? 0 : undefined,
+      retryStrategy,
+      ...extra,
+    };
+  }
+  return { host: config.redis.host, port: config.redis.port, retryStrategy, ...extra };
+}
 
-export const redis = new Redis({
-  ...base,
-  enableOfflineQueue: false, // reject immediately when down -> triggers Postgres fallback
-  maxRetriesPerRequest: 2,
-});
-export const publisher = new Redis(base);
-export const subscriber = new Redis(base);
+export const redis = new Redis(
+  redisOptions({
+    enableOfflineQueue: false, // reject immediately when down -> triggers Postgres fallback
+    maxRetriesPerRequest: 2,
+  }),
+);
+export const publisher = new Redis(redisOptions());
+export const subscriber = new Redis(redisOptions());
 
 // Plain options object for BullMQ (it manages its own connection internally).
-export const bullConnection = {
-  host: config.redis.host,
-  port: config.redis.port,
-  maxRetriesPerRequest: null,
-};
+export const bullConnection = redisOptions({ maxRetriesPerRequest: null });
 
 for (const [name, client] of [
   ['command', redis],
