@@ -32,6 +32,10 @@ coverage/
 # Claude / tooling
 .claude/
 
+# Personal interview-prep notes (never tracked)
+INTERVIEW_PREP.md
+notes-personal/
+
 # Docker volumes (if ever bind-mounted locally)
 postgres-primary-data/
 postgres-replica-data/
