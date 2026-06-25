@@ -109,13 +109,40 @@ d('seat hold — concurrency & phantom-hold', () => {
     const { eventId, seatId } = await seedOneSeat();
     const [userId] = await seedUsers(1);
 
-    // Force the reservation INSERT (the only writePool.query in the redis path)
-    // to throw, simulating a DB hiccup after the lock was acquired.
-    const spy = vi.spyOn(writePool, 'query').mockRejectedValueOnce(new Error('boom'));
+    // Force the durable claim to fail (it runs in a withTransaction, i.e. via
+    // writePool.connect()), simulating a DB hiccup after the lock was acquired.
+    const spy = vi.spyOn(writePool, 'connect').mockRejectedValueOnce(new Error('boom'));
     await expect(holdSeat({ userId, seatId, eventId })).rejects.toThrow('boom');
     spy.mockRestore();
 
     // The fix must have cleaned up our lock instead of leaving it for 480s.
+    expect(await redis.exists(seatKey(eventId, seatId))).toBe(0);
+  });
+
+  it('refuses a hold on an already-booked seat after its Redis key is gone (oversell race)', async () => {
+    const { eventId, seatId } = await seedOneSeat();
+    const [userA, userB] = await seedUsers(2);
+
+    // Reproduce the exact window the load test oversold into: the seat is already
+    // confirmed/booked AND its Redis hold key has been deleted by the confirm
+    // path — so the Lua lock alone would let a new hold through.
+    await writePool.query("UPDATE seats SET status = 'booked' WHERE id = $1", [seatId]);
+    await writePool.query(
+      `INSERT INTO reservations (seat_id, user_id, event_id, status, hold_token, confirmed_at)
+       VALUES ($1, $2, $3, 'confirmed', 'tok-A', NOW())`,
+      [seatId, userA, eventId],
+    );
+    await redis.del(seatKey(eventId, seatId));
+
+    // The durable FOR UPDATE guard must refuse user B (would oversell before the fix).
+    await expect(holdSeat({ userId: userB, seatId, eventId })).rejects.toMatchObject({ statusCode: 409 });
+
+    // No phantom held row, no dangling lock — the seat stays cleanly booked.
+    const { rows } = await writePool.query(
+      "SELECT COUNT(*)::int AS n FROM reservations WHERE seat_id = $1 AND status = 'held'",
+      [seatId],
+    );
+    expect(rows[0].n).toBe(0);
     expect(await redis.exists(seatKey(eventId, seatId))).toBe(0);
   });
 });

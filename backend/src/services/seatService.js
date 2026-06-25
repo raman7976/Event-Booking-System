@@ -57,21 +57,30 @@ export async function holdSeat({ userId, seatId, eventId }) {
     }
     if (held === 0) throw Errors.conflict('Seat just taken, try another');
 
-    // Durable record. A DB error here is real — surface it, never re-insert.
-    // But the Redis lock is already ours: if the INSERT fails we must release it,
-    // otherwise the seat stays phantom-held for the full TTL (480s) with no
-    // backing reservation row and no scheduled expiry. Drop our key, then rethrow.
+    // Durable record. The Redis Lua lock guarantees one *hold* per seat, but a
+    // seat that was just CONFIRMED has its Redis key deleted by the confirm path —
+    // so a hold acquired in that brief window could land on an already-booked
+    // seat (a confirm-vs-hold race that oversells; the controller's pre-check is
+    // a non-atomic read and can't close it). So we claim the seat row FOR UPDATE
+    // and refuse if it's already booked, in the SAME transaction as the insert —
+    // this serializes against confirm's seat UPDATE and makes Postgres the
+    // authority. Any failure/rejection releases the Redis lock we hold, otherwise
+    // the seat would stay phantom-held for the full TTL (480s).
     try {
-      await writePool.query(
-        `INSERT INTO reservations (seat_id, user_id, event_id, status, hold_token, held_at, expires_at)
-         VALUES ($1, $2, $3, 'held', $4, NOW(), $5)`,
-        [seatId, userId, eventId, holdToken, expiresAt],
-      );
+      await withTransaction(async (client) => {
+        const { rows } = await client.query(
+          'SELECT status FROM seats WHERE id = $1 FOR UPDATE',
+          [seatId],
+        );
+        if (rows.length === 0) throw Errors.notFound('Seat not found');
+        if (rows[0].status === 'booked') throw Errors.conflict('Seat just taken, try another');
+        await insertHeldReservation(client, { seatId, userId, eventId, holdToken, expiresAt });
+      });
     } catch (err) {
       try {
         await redis.del(seatKey(eventId, seatId));
       } catch (delErr) {
-        logger.warn(`[hold] phantom-lock cleanup failed: ${delErr.message}`);
+        logger.warn(`[hold] lock cleanup failed: ${delErr.message}`);
       }
       throw err;
     }

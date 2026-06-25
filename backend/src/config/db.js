@@ -11,7 +11,10 @@ const common = {
   database: config.pg.database,
   user: config.pg.user,
   password: config.pg.password,
-  max: 10,
+  // Per-pool connection ceiling. Configurable so it can be tuned for load tests
+  // / bigger instances without a code change (behind PgBouncer in prod this is
+  // the per-app-instance cap, not the DB's total).
+  max: Number(process.env.PG_POOL_MAX) || 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
 };

@@ -17,7 +17,9 @@
     "test": "vitest run",
     "test:unit": "vitest run test/unit",
     "test:int": "vitest run test/integration",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "loadtest:prep": "node src/scripts/loadtestPrep.js",
+    "loadtest:verify": "node src/scripts/loadtestVerify.js"
   },
   "dependencies": {
     "@google/genai": "^2.0.0",

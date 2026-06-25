@@ -40,3 +40,8 @@ notes-personal/
 postgres-primary-data/
 postgres-replica-data/
 redis-data/
+
+# Load-test generated data (contains signed access tokens — never commit)
+loadtest/data.json
+# Local-only docker overrides for load testing
+docker-compose.override.yml
