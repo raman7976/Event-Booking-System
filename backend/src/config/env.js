@@ -86,3 +86,37 @@ export const config = {
 
   workerHealthPort: int(process.env.WORKER_HEALTH_PORT, 3002),
 };
+
+// ── Production secret guard ──
+// The dev fallbacks above keep `docker compose up` and local dev one-command
+// simple, but a production deploy that forgets to override them would silently
+// run on a forgeable JWT secret / public DB password. So in production we refuse
+// to boot until every *runtime-critical* secret is set to something other than
+// its known default. Runs as an import-time side effect, so both the API server
+// and the worker enforce it; migrate.js reads process.env directly (unaffected),
+// and tests run under NODE_ENV=test so this never fires there.
+//
+// Only JWT_SECRET and PG_PASSWORD are gated — the server and worker need both to
+// run securely. ADMIN_PASSWORD is deliberately NOT here: it's consumed only by
+// the one-off seed script (src/scripts/seed.js), never at boot, so gating it
+// would needlessly crash a perfectly healthy deployment that never seeds in prod.
+const KNOWN_DEFAULTS = {
+  JWT_SECRET: 'dev_super_secret_change_me_in_production',
+  PG_PASSWORD: 'booking_pass',
+};
+
+export function validateProductionSecrets(env = process.env) {
+  const offenders = Object.entries(KNOWN_DEFAULTS)
+    .filter(([name, def]) => !env[name] || env[name] === def)
+    .map(([name]) => name);
+  if (offenders.length) {
+    throw new Error(
+      `[config] refusing to start in production: ${offenders.join(', ')} ` +
+        'must be set to a non-default value. Configure these env vars and redeploy.',
+    );
+  }
+}
+
+if (config.env === 'production') {
+  validateProductionSecrets();
+}

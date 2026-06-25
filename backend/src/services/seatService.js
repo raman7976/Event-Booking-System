@@ -58,11 +58,23 @@ export async function holdSeat({ userId, seatId, eventId }) {
     if (held === 0) throw Errors.conflict('Seat just taken, try another');
 
     // Durable record. A DB error here is real — surface it, never re-insert.
-    await writePool.query(
-      `INSERT INTO reservations (seat_id, user_id, event_id, status, hold_token, held_at, expires_at)
-       VALUES ($1, $2, $3, 'held', $4, NOW(), $5)`,
-      [seatId, userId, eventId, holdToken, expiresAt],
-    );
+    // But the Redis lock is already ours: if the INSERT fails we must release it,
+    // otherwise the seat stays phantom-held for the full TTL (480s) with no
+    // backing reservation row and no scheduled expiry. Drop our key, then rethrow.
+    try {
+      await writePool.query(
+        `INSERT INTO reservations (seat_id, user_id, event_id, status, hold_token, held_at, expires_at)
+         VALUES ($1, $2, $3, 'held', $4, NOW(), $5)`,
+        [seatId, userId, eventId, holdToken, expiresAt],
+      );
+    } catch (err) {
+      try {
+        await redis.del(seatKey(eventId, seatId));
+      } catch (delErr) {
+        logger.warn(`[hold] phantom-lock cleanup failed: ${delErr.message}`);
+      }
+      throw err;
+    }
 
     // Side effects are best-effort; a failure does NOT void an established hold.
     try {
@@ -212,7 +224,7 @@ async function getGemini() {
   return geminiClient;
 }
 
-function normalizePrefs(preferences) {
+export function normalizePrefs(preferences) {
   if (!preferences) return new Set();
   const arr = Array.isArray(preferences) ? preferences : String(preferences).split(',');
   return new Set(arr.map((p) => p.trim().toLowerCase()).filter(Boolean));
@@ -220,7 +232,7 @@ function normalizePrefs(preferences) {
 
 const rowRank = (row) => (row || 'Z').charCodeAt(0); // 'A' (65) = front
 
-function buildReason(seats, prefs, total) {
+export function buildReason(seats, prefs, total) {
   const labels = seats.map((s) => `${s.row}${s.number}`).join(', ');
   const tags = [];
   if (prefs.has('together')) tags.push('together');
@@ -232,7 +244,7 @@ function buildReason(seats, prefs, total) {
 }
 
 /** Deterministic recommender used when Gemini is unavailable or fails. */
-function heuristicRecommend(available, groupSize, maxBudget, prefs) {
+export function heuristicRecommend(available, groupSize, maxBudget, prefs) {
   const seats = available.filter((s) => s.price != null);
   if (!seats.length || groupSize < 1) {
     return { recommendedSeatIds: [], reason: 'No available seats match the request.' };
