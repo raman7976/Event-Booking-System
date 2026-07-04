@@ -3,6 +3,7 @@
 // from the same build:
 //   SERVICE_ROLE=web    -> run migrations (with retry for cold private DNS) then the API/WS server
 //   SERVICE_ROLE=worker -> run the BullMQ worker process
+//   SERVICE_ROLE=all    -> migrate, then run the API + worker together in one container
 //   (unset)             -> web
 import { spawn } from 'node:child_process';
 
@@ -30,6 +31,18 @@ async function migrateWithRetry(attempts = 5) {
 async function main() {
   if (role === 'worker') {
     process.exit(await run(['src/workers/index.js']));
+  }
+  if (role === 'all') {
+    // Free single-service tiers (Render): API + worker in one container. If either
+    // child exits, take the whole container down so the platform restarts it clean.
+    await migrateWithRetry();
+    const server = spawn('node', ['src/server.js'], { stdio: 'inherit' });
+    const worker = spawn('node', ['src/workers/index.js'], { stdio: 'inherit' });
+    const bail = (code) => { server.kill(); worker.kill(); process.exit(code ?? 0); };
+    server.on('exit', bail);
+    worker.on('exit', bail);
+    ['SIGTERM', 'SIGINT'].forEach((sig) => process.on(sig, () => { server.kill(sig); worker.kill(sig); }));
+    return;
   }
   await migrateWithRetry();
   process.exit(await run(['src/server.js']));

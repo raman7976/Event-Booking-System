@@ -7,28 +7,30 @@ import { logger } from '../utils/logger.js';
 
 const { Pool } = pg;
 
-const common = {
-  database: config.pg.database,
-  user: config.pg.user,
-  password: config.pg.password,
-  max: 10,
-  idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
-};
+// SSL for managed Postgres (Neon). rejectUnauthorized:false accepts the provider
+// cert without shipping a CA bundle; false disables SSL for local/Railway.
+const ssl = config.pg.ssl ? { rejectUnauthorized: false } : false;
+const base = { max: 10, idleTimeoutMillis: 30_000, connectionTimeoutMillis: 5_000, ssl };
 
-export const writePool = new Pool({
-  ...common,
-  host: config.pg.primaryHost,
-  port: config.pg.primaryPort,
-  application_name: `${config.instanceId}-write`,
-});
+// A managed URL (Neon) drives both pools from one pooled endpoint — pickReadPool +
+// the RYW flag still apply. Otherwise use discrete primary/replica host+port.
+function makePool(appName, replica = false) {
+  if (config.pg.url) {
+    return new Pool({ ...base, connectionString: config.pg.url, application_name: appName });
+  }
+  return new Pool({
+    ...base,
+    host: replica ? config.pg.replicaHost : config.pg.primaryHost,
+    port: replica ? config.pg.replicaPort : config.pg.primaryPort,
+    database: config.pg.database,
+    user: config.pg.user,
+    password: config.pg.password,
+    application_name: appName,
+  });
+}
 
-export const readPool = new Pool({
-  ...common,
-  host: config.pg.replicaHost,
-  port: config.pg.replicaPort,
-  application_name: `${config.instanceId}-read`,
-});
+export const writePool = makePool(`${config.instanceId}-write`);
+export const readPool = makePool(`${config.instanceId}-read`, true);
 
 // Pools must have an error handler or an idle-client error crashes the process.
 writePool.on('error', (err) => logger.error('[db] writePool idle error:', err.message));

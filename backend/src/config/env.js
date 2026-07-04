@@ -36,6 +36,11 @@ export const config = {
   },
 
   pg: {
+    // Managed Postgres (Neon) exposes a single connection URL; when set, the pools
+    // build from it with SSL. DIRECT_URL is Neon's unpooled endpoint for migrations.
+    url: process.env.DATABASE_URL || '',
+    directUrl: process.env.DIRECT_URL || process.env.DATABASE_URL || '',
+    ssl: process.env.PG_SSL === 'true' || Boolean(process.env.DATABASE_URL),
     primaryHost: process.env.PG_PRIMARY_HOST || 'localhost',
     primaryPort: int(process.env.PG_PRIMARY_PORT, 5432),
     replicaHost: process.env.PG_REPLICA_HOST || 'localhost',

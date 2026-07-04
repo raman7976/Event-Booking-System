@@ -1,0 +1,41 @@
+# Render Blueprint (Infrastructure-as-Code record). One FREE web service runs the
+# API + BullMQ worker together (SERVICE_ROLE=all), kept warm by an UptimeRobot ping.
+# Secrets (DATABASE_URL, DIRECT_URL, REDIS_URL, JWT_SECRET, ADMIN_PASSWORD) are set
+# via the Render API/dashboard — never committed (sync: false).
+services:
+  - type: web
+    name: seatlive-backend
+    runtime: docker
+    repo: https://github.com/raman7976/Event-Booking-System
+    branch: deploy/render
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: SERVICE_ROLE
+        value: all
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: none
+      - key: CLIENT_URL
+        value: https://seatlive.vercel.app
+      - key: TZ
+        value: Asia/Kolkata
+      - key: ADMIN_EMAIL
+        value: admin@seatlive.app
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
