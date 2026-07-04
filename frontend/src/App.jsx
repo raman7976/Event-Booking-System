@@ -169,9 +169,6 @@ function Footer() {
         <span className="font-display font-semibold text-slate-600">
           <Icon name="ticket" size={14} className="-mt-0.5 mr-1.5 text-slate-400" />SeatLive — real-time seat booking
         </span>
-        <span>
-          React · Socket.io · Redis Lua holds · Postgres replication · BullMQ · nginx ×2 nodes
-        </span>
       </div>
     </footer>
   );

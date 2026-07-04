@@ -61,7 +61,7 @@ export default function RegisterPage() {
           <input
             id="name" required maxLength={100} value={name}
             onChange={(e) => setName(e.target.value)} autoComplete="name"
-            className="input-field" placeholder="Ada Lovelace"
+            className="input-field" placeholder="Raman Kumar Singh"
           />
         </div>
         <div>
