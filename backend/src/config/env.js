@@ -70,6 +70,19 @@ export const config = {
     model: process.env.GEMINI_MODEL || 'gemini-2.5-pro',
   },
 
+  // Agentic-RAG (bus vertical). Generation via Groq (free, OpenAI-compatible,
+  // supports tool calling); embeddings run locally via transformers.js (no key).
+  groq: {
+    apiKey: process.env.GROQ_API_KEY || '',
+    model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+  },
+  ai: {
+    embeddingModel: process.env.EMBEDDING_MODEL || 'Xenova/all-MiniLM-L6-v2',
+    assistantMaxSteps: int(process.env.AI_ASSISTANT_MAX_STEPS, 5),
+    ragTopK: int(process.env.AI_RAG_TOP_K, 4),
+    sqlTimeoutMs: int(process.env.AI_SQL_TIMEOUT_MS, 5000),
+  },
+
   // Campus bus vertical. Windows are stored in seconds so tests can shrink the
   // whole lifecycle (BUS_*_SECONDS); production uses the minute-scale defaults.
   bus: {

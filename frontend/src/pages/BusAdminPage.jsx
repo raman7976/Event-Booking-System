@@ -8,7 +8,7 @@ import {
   busAdminSchedules, busAdminCreateSchedule, busAdminUpdateSchedule, busAdminDeleteSchedule,
   busAdminHolidays, busAdminAddHoliday, busAdminRemoveHoliday,
   busAdminManifest, busAdminGenerate, busSchedule, apiError,
-  busAdminFlags, busAdminAnalyzeFlags, busAdminCapacityAdvice,
+  busAdminFlags, busAdminAnalyzeFlags, busAdminCapacityAdvice, busAdminAnalytics,
 } from '../services/api.js';
 import { useToast } from '../components/ui/Toast.jsx';
 import Icon from '../components/ui/Icon.jsx';
@@ -269,6 +269,78 @@ function ScheduleTable({ rows, onPatch, onDelete, busyId }) {
   );
 }
 
+// AI analytics: a natural-language question -> guarded read-only SQL + summary.
+function AnalyticsCard() {
+  const toast = useToast();
+  const [question, setQuestion] = useState('');
+  const [result, setResult] = useState(null);
+  const ask = useMutation({
+    mutationFn: busAdminAnalytics,
+    onSuccess: setResult,
+    onError: (err) => toast.push(apiError(err), 'error', 6000),
+  });
+  const cols = result?.rows?.length ? Object.keys(result.rows[0]) : [];
+  const EXAMPLES = [
+    'No-shows in the last 30 days',
+    'Average fill rate per route',
+    'Riders with the most no-shows',
+  ];
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="font-display text-lg font-bold text-slate-900">Ask the data</h3>
+        <span className="text-[11px] text-slate-400">natural language → read-only SQL</span>
+      </div>
+      <form
+        onSubmit={(e) => { e.preventDefault(); if (question.trim()) ask.mutate(question.trim()); }}
+        className="flex items-center gap-2"
+      >
+        <input
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="e.g. which routes had the most no-shows last month?"
+          className="flex-1 rounded-full border border-slate-200 px-3 py-2 text-sm outline-none focus:border-violet-400"
+        />
+        <button type="submit" disabled={ask.isPending || !question.trim()} className="btn-primary !px-4 !py-2 text-sm disabled:opacity-50">
+          {ask.isPending ? 'Running…' : 'Ask'}
+        </button>
+      </form>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {EXAMPLES.map((e) => (
+          <button key={e} type="button" onClick={() => { setQuestion(e); ask.mutate(e); }} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600 hover:bg-slate-100">
+            {e}
+          </button>
+        ))}
+      </div>
+
+      {result && (
+        <div className="mt-4 space-y-3">
+          {result.summary && <p className="text-sm text-slate-700">{result.summary}</p>}
+          {result.sql && (
+            <pre className="overflow-x-auto rounded-lg bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-100">{result.sql}</pre>
+          )}
+          {result.rows?.length > 0 && (
+            <div className="overflow-x-auto rounded-lg border border-slate-100">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-500">
+                  <tr>{cols.map((c) => <th key={c} className="px-3 py-2 font-semibold">{c}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {result.rows.slice(0, 50).map((row, i) => (
+                    <tr key={i} className="border-t border-slate-100">
+                      {cols.map((c) => <td key={c} className="px-3 py-1.5 text-slate-700">{String(row[c])}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 export default function BusAdminPage() {
   const qc = useQueryClient();
   const toast = useToast();
@@ -480,6 +552,11 @@ export default function BusAdminPage() {
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
         <RiderFlagsCard />
         <CapacityAdvisorCard onApply={(id, capacity) => patch(id, { capacity })} busyId={busyId} />
+      </div>
+
+      {/* AI analytics — text-to-SQL */}
+      <div className="mt-5">
+        <AnalyticsCard />
       </div>
     </div>
   );

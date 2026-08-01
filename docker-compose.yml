@@ -33,6 +33,11 @@ x-app-env: &app-env
   SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-3600}
   GEMINI_API_KEY: ${GEMINI_API_KEY:-}
   GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-pro}
+  # Bus agentic-RAG: Groq for generation (optional — falls back if unset),
+  # transformers.js for local embeddings (cache mounted below to avoid re-download).
+  GROQ_API_KEY: ${GROQ_API_KEY:-}
+  GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+  TRANSFORMERS_CACHE: /app/.transformers-cache
   BUS_OPEN_SECONDS: ${BUS_OPEN_SECONDS:-3600}
   BUS_CONFIRM_SECONDS: ${BUS_CONFIRM_SECONDS:-1200}
   BUS_AUTORELEASE_SECONDS: ${BUS_AUTORELEASE_SECONDS:-600}
@@ -64,7 +69,7 @@ services:
 
   # ─── PostgreSQL 15 — PRIMARY (writes) ─────────────────────────────────────
   postgres_primary:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     command:
       - "postgres"
       - "-c"
@@ -129,7 +134,7 @@ services:
 
   # ─── PostgreSQL 15 — REPLICA (reads, streaming replication) ───────────────
   postgres_replica:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     depends_on:
       postgres_primary:
         condition: service_healthy
@@ -163,6 +168,8 @@ services:
       <<: *app-env
       PORT: 3000
       INSTANCE_ID: node_app_1
+    volumes:
+      - transformers_cache:/app/.transformers-cache
     depends_on:
       redis:
         condition: service_healthy
@@ -190,6 +197,8 @@ services:
       <<: *app-env
       PORT: 3001
       INSTANCE_ID: node_app_2
+    volumes:
+      - transformers_cache:/app/.transformers-cache
     depends_on:
       redis:
         condition: service_healthy
@@ -218,6 +227,8 @@ services:
       <<: *app-env
       INSTANCE_ID: bullmq_worker
       WORKER_HEALTH_PORT: 3002
+    volumes:
+      - transformers_cache:/app/.transformers-cache
     depends_on:
       redis:
         condition: service_healthy
@@ -293,3 +304,4 @@ volumes:
   redis_data:
   postgres_primary_data:
   postgres_replica_data:
+  transformers_cache:

@@ -16,6 +16,7 @@ import {
   listHolidays, addHoliday, removeHoliday, tripManifest, regenerate,
   riderFlags, runRiderAnalysis, capacityAdvice,
 } from '../controllers/busAdminController.js';
+import { assistant, adminAnalytics } from '../controllers/busAgentController.js';
 
 const router = Router();
 
@@ -26,6 +27,16 @@ const dateQuery = z.object({
 
 const campus = [requireAuth, requireCampusEmail, requireRollNumber];
 const actionLimiter = rateLimiter({ max: 30, windowSeconds: 60, keyPrefix: 'bus' });
+const aiLimiter = rateLimiter({ max: 20, windowSeconds: 60, keyPrefix: 'bus-ai' });
+
+const assistantSchema = z.object({
+  message: z.string().min(1).max(1000),
+  history: z
+    .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(4000) }))
+    .max(20)
+    .optional(),
+});
+const analyticsSchema = z.object({ question: z.string().min(1).max(500) });
 
 router.get('/schedule', optionalAuth, validate(dateQuery, 'query'), schedule);
 router.get('/trips/:id', optionalAuth, validate(idParam, 'params'), tripDetail);
@@ -37,6 +48,9 @@ router.post('/trips/:id/confirm', ...campus, validate(idParam, 'params'), confir
 router.post('/trips/:id/decline', ...campus, validate(idParam, 'params'), decline);
 router.post('/trips/:id/waitlist', ...campus, actionLimiter, validate(idParam, 'params'), joinWaitlist);
 router.delete('/trips/:id/waitlist', ...campus, validate(idParam, 'params'), leaveWaitlist);
+
+// Campus Bus Assistant (read-only agentic RAG) — campus account + roll required.
+router.post('/assistant', ...campus, aiLimiter, validate(assistantSchema), assistant);
 
 // ── transport admin ──
 const admin = [requireAuth, requireRole('admin')];
@@ -77,5 +91,8 @@ router.post('/admin/generate', ...admin, validate(generateSchema), regenerate);
 router.get('/admin/flags', ...admin, riderFlags);
 router.post('/admin/flags/analyze', ...admin, runRiderAnalysis);
 router.get('/admin/capacity-advice', ...admin, capacityAdvice);
+
+// Admin analytics — natural language to guarded read-only SQL (agentic RAG).
+router.post('/admin/analytics/query', ...admin, aiLimiter, validate(analyticsSchema), adminAnalytics);
 
 export default router;

@@ -10,6 +10,8 @@ RUN npm ci --omit=dev
 # Application source + SQL migrations (so `npm run migrate` works inside the image)
 COPY src ./src
 COPY migrations ./migrations
+# Bus knowledge-base docs (so `npm run ingest:bus` works inside the image)
+COPY docs ./docs
 
 ENV NODE_ENV=production
 # Default port; overridden per-instance via compose (3000 / 3001)

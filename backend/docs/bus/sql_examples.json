@@ -1,0 +1,34 @@
+[
+  {
+    "question": "How many no-shows were there in the last 30 days?",
+    "sql": "SELECT COUNT(*) AS no_shows FROM bus_bookings b JOIN bus_trips t ON t.id = b.trip_id WHERE b.status = 'no_show' AND t.service_date >= CURRENT_DATE - 30 LIMIT 100;"
+  },
+  {
+    "question": "Which routes had the most no-shows last month?",
+    "sql": "SELECT s.bus_no, s.origin, s.destination, COUNT(*) AS no_shows FROM bus_bookings b JOIN bus_trips t ON t.id = b.trip_id JOIN bus_schedules s ON s.id = t.schedule_id WHERE b.status = 'no_show' AND t.service_date >= CURRENT_DATE - 30 GROUP BY s.bus_no, s.origin, s.destination ORDER BY no_shows DESC LIMIT 20;"
+  },
+  {
+    "question": "What is the average fill rate per route over departed trips in the last 3 weeks?",
+    "sql": "SELECT s.bus_no, s.origin, s.destination, ROUND(AVG(t.booked_count::numeric / NULLIF(t.capacity, 0)), 3) AS avg_fill, COUNT(*) AS trips FROM bus_trips t JOIN bus_schedules s ON s.id = t.schedule_id WHERE t.status = 'departed' AND t.service_date >= CURRENT_DATE - 21 GROUP BY s.bus_no, s.origin, s.destination ORDER BY avg_fill DESC LIMIT 20;"
+  },
+  {
+    "question": "Which riders have the most no-shows?",
+    "sql": "SELECT u.name, u.roll_number, COUNT(*) AS no_shows FROM bus_bookings b JOIN users u ON u.id = b.user_id WHERE b.status = 'no_show' GROUP BY u.id, u.name, u.roll_number ORDER BY no_shows DESC LIMIT 20;"
+  },
+  {
+    "question": "How many riders are currently on the waitlist for trips departing today?",
+    "sql": "SELECT COUNT(*) AS waiting FROM bus_waitlist w JOIN bus_trips t ON t.id = w.trip_id WHERE w.promoted_at IS NULL AND t.service_date = CURRENT_DATE LIMIT 100;"
+  },
+  {
+    "question": "What is the fill rate for the Friday 6pm Raja Park bus?",
+    "sql": "SELECT t.service_date, t.booked_count, t.capacity, ROUND(t.booked_count::numeric / NULLIF(t.capacity, 0), 3) AS fill FROM bus_trips t JOIN bus_schedules s ON s.id = t.schedule_id WHERE s.destination = 'Raja Park' AND EXTRACT(HOUR FROM t.departure_at) = 18 AND EXTRACT(DOW FROM t.departure_at) = 5 ORDER BY t.service_date DESC LIMIT 20;"
+  },
+  {
+    "question": "How many trips sold out in the last week?",
+    "sql": "SELECT COUNT(*) AS full_trips FROM bus_trips t WHERE t.booked_count >= t.capacity AND t.service_date >= CURRENT_DATE - 7 LIMIT 100;"
+  },
+  {
+    "question": "Show the high-risk riders flagged by the reliability analysis.",
+    "sql": "SELECT u.name, u.roll_number, f.tier, f.suggested_action, f.rationale FROM bus_rider_flags f JOIN users u ON u.id = f.user_id WHERE f.tier = 'high' ORDER BY f.created_at DESC LIMIT 20;"
+  }
+]

@@ -132,6 +132,12 @@ export const busAdminFlags = () => api.get('/bus/admin/flags').then((r) => r.dat
 export const busAdminAnalyzeFlags = () => api.post('/bus/admin/flags/analyze').then((r) => r.data);
 export const busAdminCapacityAdvice = () => api.get('/bus/admin/capacity-advice').then((r) => r.data);
 
+// bus AI (agentic RAG)
+export const busAssistantAsk = (message, history) =>
+  api.post('/bus/assistant', { message, ...(history ? { history } : {}) }).then((r) => r.data);
+export const busAdminAnalytics = (question) =>
+  api.post('/bus/admin/analytics/query', { question }).then((r) => r.data);
+
 // ── Admin ──
 export const adminOverview = () => api.get('/admin/overview').then((r) => r.data);
 export const adminCreateEvent = (payload) => api.post('/admin/events', payload).then((r) => r.data);

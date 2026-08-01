@@ -9,6 +9,7 @@ import { useAuth } from '../hooks/useAuth.js';
 import { useBusScheduleLive } from '../hooks/useBusLive.js';
 import { useToast } from '../components/ui/Toast.jsx';
 import RollNumberGate from '../components/RollNumberGate.jsx';
+import BusAssistant from '../components/BusAssistant.jsx';
 
 const hhmm = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -244,6 +245,8 @@ export default function BusSchedulePage() {
         Confirm boarding from 20 minutes before departure — unconfirmed seats are released to the
         waitlist 10 minutes before the bus leaves. <Link to="/my-bookings" className="text-violet-600 underline">Your trips →</Link>
       </p>
+
+      <BusAssistant />
     </div>
   );
 }

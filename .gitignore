@@ -40,3 +40,7 @@ notes-personal/
 postgres-primary-data/
 postgres-replica-data/
 redis-data/
+
+# Local-only docker overrides + generated load-test data (never commit)
+docker-compose.override.yml
+loadtest/data.json
